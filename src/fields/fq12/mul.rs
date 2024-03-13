@@ -304,7 +304,7 @@ pub fn eval_fq12_mul_circuit<F: RichField + Extendable<D>, const D: usize>(
 mod tests {
     use core::marker::PhantomData;
 
-    use ark_bn254::Fq12;
+    use ark_bls12_381::Fq12;
     use ark_std::UniformRand;
     use itertools::Itertools;
     use plonky2::{

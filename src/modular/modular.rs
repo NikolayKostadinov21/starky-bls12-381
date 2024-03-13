@@ -1,6 +1,6 @@
 use core::fmt;
 
-use ark_bn254::Fq;
+use ark_bls12_381::Fq;
 use itertools::Itertools;
 use num::{FromPrimitive, Signed, Zero};
 use num_bigint::{BigInt, BigUint, Sign};
@@ -322,7 +322,7 @@ mod tests {
     use super::*;
     use core::marker::PhantomData;
 
-    use ark_bn254::Fq;
+    use ark_bls12_381::Fq;
     use ark_std::UniformRand;
     use itertools::Itertools;
     use num_bigint::BigUint;

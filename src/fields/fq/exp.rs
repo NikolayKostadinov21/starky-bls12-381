@@ -35,7 +35,7 @@ fn constants(num_io: usize) -> ExpStarkConstants {
 
 use std::marker::PhantomData;
 
-use ark_bn254::Fq;
+use ark_bls12_381::Fq;
 use itertools::Itertools;
 use plonky2::{
     field::{
@@ -559,7 +559,7 @@ mod tests {
 
     use super::*;
 
-    use ark_bn254::Fr;
+    use ark_bls12_381::Fr;
     use ark_ff::Field;
     use ark_std::UniformRand;
     use itertools::Itertools;

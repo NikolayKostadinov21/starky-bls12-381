@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use ark_bn254::Fq;
+use ark_bls12_381::Fq;
 use itertools::Itertools;
 use num_bigint::BigUint;
 use plonky2::{
@@ -17,7 +17,7 @@ use plonky2::{
     },
     util::{serialization::Buffer, timing::TimingTree},
 };
-use plonky2_bn254::fields::{fq_target::FqTarget, u256_target::U256Target};
+use plonky2_bls12_381::fields::{fq_target::FqTarget, u256_target::U256Target};
 use starky::{
     proof::StarkProofWithPublicInputsTarget,
     prover::prove,
@@ -284,7 +284,7 @@ where
 #[cfg(test)]
 mod tests {
 
-    use ark_bn254::Fq;
+    use ark_bls12_381::Fq;
 
     use ark_ff::Field;
     use ark_std::UniformRand;
@@ -298,7 +298,7 @@ mod tests {
             config::PoseidonGoldilocksConfig,
         },
     };
-    use plonky2_bn254::fields::{fq_target::FqTarget, u256_target::U256Target};
+    use plonky2_bls12_381::fields::{fq_target::FqTarget, u256_target::U256Target};
 
     use crate::{
         fields::fq::circuit::{fq_exp_circuit, FqExpInput, FqExpInputTarget},

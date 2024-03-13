@@ -39,7 +39,7 @@ use super::mul::{
     eval_fq12_mul, eval_fq12_mul_circuit, generate_fq12_mul, read_fq12, read_fq12_output,
     write_fq12, write_fq12_output, Fq12Output,
 };
-use ark_bn254::Fq12;
+use ark_bls12_381::Fq12;
 use ark_ff::Field;
 use itertools::Itertools;
 use plonky2::{
@@ -53,7 +53,7 @@ use plonky2::{
     util::transpose,
 };
 
-use plonky2_bn254::fields::native::MyFq12;
+use plonky2_bls12_381::fields::native::MyFq12;
 use starky::{
     config::StarkConfig,
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
@@ -610,7 +610,7 @@ mod tests {
 
     use super::*;
 
-    use ark_bn254::{Fq12, Fr};
+    use ark_bls12_381::{Fq12, Fr};
     use ark_ff::Field;
     use ark_std::UniformRand;
     use itertools::Itertools;

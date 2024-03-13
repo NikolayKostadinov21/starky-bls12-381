@@ -4,7 +4,7 @@ use crate::{
     curves::g2::exp::{read_g2_exp_io, G2ExpStark, G2_EXP_IO_LEN},
     utils::utils::get_u256_biguint,
 };
-use ark_bn254::{Fq2, G2Affine};
+use ark_bls12_381::{Fq2, G2Affine};
 use ark_ec::AffineRepr;
 use num_bigint::BigUint;
 use plonky2::{
@@ -21,7 +21,7 @@ use plonky2::{
     },
     util::{serialization::Buffer, timing::TimingTree},
 };
-use plonky2_bn254::{
+use plonky2_bls12_381::{
     curves::g2curve_target::G2Target,
     fields::{fq2_target::Fq2Target, fq_target::FqTarget, u256_target::U256Target},
 };
@@ -371,7 +371,7 @@ mod tests {
     use crate::curves::g2::circuit::{
         g2_exp_circuit, g2_mul_by_cofactor_circuit, G2ExpInputTarget,
     };
-    use ark_bn254::{Fq2, Fr, G2Affine};
+    use ark_bls12_381::{Fq2, Fr, G2Affine};
     use ark_ec::AffineRepr;
     use ark_std::UniformRand;
     use itertools::Itertools;
@@ -384,7 +384,7 @@ mod tests {
             config::PoseidonGoldilocksConfig,
         },
     };
-    use plonky2_bn254::{
+    use plonky2_bls12_381::{
         curves::{g2curve_target::G2Target, map_to_g2::map_to_g2_without_cofactor_mul},
         fields::u256_target::U256Target,
     };

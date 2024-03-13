@@ -35,7 +35,7 @@ fn constants(num_io: usize) -> ExpStarkConstants {
 
 use core::marker::PhantomData;
 
-use ark_bn254::{Fr, G1Affine};
+use ark_bls12_381::{Fr, G1Affine};
 use itertools::Itertools;
 use plonky2::{
     field::{
@@ -750,7 +750,7 @@ mod tests {
         utils::flags::NUM_INPUT_LIMBS,
         utils::utils::{biguint_to_bits, bits_to_biguint, u32_digits_to_biguint},
     };
-    use ark_bn254::{Fr, G1Affine};
+    use ark_bls12_381::{Fr, G1Affine};
     use ark_std::UniformRand;
     use itertools::Itertools;
     use plonky2::{

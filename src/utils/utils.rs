@@ -1,4 +1,4 @@
-use ark_bn254::{Fq, Fq12, Fq2};
+use ark_bls12_381::{Fq, Fq12, Fq2};
 use bitvec::prelude::*;
 use itertools::Itertools;
 use num_bigint::{BigInt, BigUint, Sign};
@@ -12,7 +12,7 @@ use plonky2::iop::target::Target;
 use plonky2::iop::witness::Witness;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::util::transpose;
-use plonky2_bn254::fields::native::MyFq12;
+use plonky2_bls12_381::fields::native::MyFq12;
 
 use super::flags::NUM_INPUT_LIMBS;
 use crate::constants::{LIMB_BITS, N_LIMBS};

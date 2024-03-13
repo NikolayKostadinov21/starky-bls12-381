@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use ark_bn254::{Fq, Fq12};
+use ark_bls12_381::{Fq, Fq12};
 use ark_ff::Field;
 use itertools::Itertools;
 use num_bigint::BigUint;
@@ -18,7 +18,7 @@ use plonky2::{
     },
     util::{serialization::Buffer, timing::TimingTree},
 };
-use plonky2_bn254::fields::{
+use plonky2_bls12_381::fields::{
     fq12_target::Fq12Target, fq_target::FqTarget, native::MyFq12, u256_target::U256Target,
 };
 use starky::{
@@ -343,7 +343,7 @@ where
 mod tests {
     use std::time::Instant;
 
-    use ark_bn254::{Fq12, Fr};
+    use ark_bls12_381::{Fq12, Fr};
     use ark_ff::Field;
     use ark_std::UniformRand;
     use itertools::Itertools;
@@ -359,7 +359,7 @@ mod tests {
         },
         util::timing::TimingTree,
     };
-    use plonky2_bn254::fields::{fq12_target::Fq12Target, u256_target::U256Target};
+    use plonky2_bls12_381::fields::{fq12_target::Fq12Target, u256_target::U256Target};
     use starky::{
         prover::prove, recursive_verifier::set_stark_proof_with_pis_target,
         verifier::verify_stark_proof,

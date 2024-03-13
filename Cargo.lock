@@ -32,13 +32,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c6f84b74db2535ebae81eede2f39b947dcbf01d093ae5f791e5dd414a1bf289"
 
 [[package]]
-name = "ark-bn254"
+name = "ark-bls12-381"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a22f4561524cd949590d78d7d4c5df8f592430d221f7f3c9497bbafd8972120f"
+checksum = "c775f0d12169cba7aae4caeb547bb6a50781c7449a8aa53793827c9ec4abf488"
 dependencies = [
  "ark-ec",
  "ark-ff",
+ "ark-serialize",
  "ark-std",
 ]
 
@@ -551,12 +552,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "plonky2-bn254"
+name = "plonky2-bls12-381"
 version = "0.1.0"
-source = "git+https://github.com/qope/plonky2-bn254.git?rev=d616d57#d616d575e517f35e5839ed8eb90f1a2bf1b32c80"
+source = "git+https://github.com/metacraft-labs/plonky2-bn254.git#5126195f10a4eb03dbe062c77d9a5bcea879354c"
 dependencies = [
  "anyhow",
- "ark-bn254",
+ "ark-bls12-381",
  "ark-ec",
  "ark-ff",
  "ark-std",
@@ -810,7 +811,7 @@ name = "starky-bls12-381"
 version = "0.1.1"
 dependencies = [
  "anyhow",
- "ark-bn254",
+ "ark-bls12-381",
  "ark-ec",
  "ark-ff",
  "ark-std",
@@ -822,7 +823,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "plonky2",
- "plonky2-bn254",
+ "plonky2-bls12-381",
  "plonky2_maybe_rayon 0.1.0",
  "plonky2_u32",
  "rand",

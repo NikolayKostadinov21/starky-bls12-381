@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use ark_bn254::Fq2;
+use ark_bls12_381::Fq2;
 use itertools::Itertools;
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;

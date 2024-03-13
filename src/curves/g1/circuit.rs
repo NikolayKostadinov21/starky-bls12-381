@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use ark_bn254::{Fr, G1Affine};
+use ark_bls12_381::{Fr, G1Affine};
 use num_bigint::BigUint;
 use plonky2::{
     field::extension::Extendable,
@@ -16,7 +16,7 @@ use plonky2::{
     },
     util::{serialization::Buffer, timing::TimingTree},
 };
-use plonky2_bn254::{
+use plonky2_bls12_381::{
     curves::g1curve_target::G1Target,
     fields::{fq_target::FqTarget, u256_target::U256Target},
 };
@@ -305,7 +305,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use ark_bn254::{Fr, G1Affine};
+    use ark_bls12_381::{Fr, G1Affine};
     use ark_ec::AffineRepr;
     use ark_std::UniformRand;
     use itertools::Itertools;
@@ -320,7 +320,7 @@ mod tests {
         },
         util::timing::TimingTree,
     };
-    use plonky2_bn254::{curves::g1curve_target::G1Target, fields::u256_target::U256Target};
+    use plonky2_bls12_381::{curves::g1curve_target::G1Target, fields::u256_target::U256Target};
     use starky::{
         prover::prove, recursive_verifier::set_stark_proof_with_pis_target,
         verifier::verify_stark_proof,

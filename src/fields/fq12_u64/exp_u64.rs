@@ -64,7 +64,7 @@ use crate::{
         columns_to_fq12, fq_to_columns, fq_to_u16_columns, i64_to_column_positive, read_u16_fq,
     },
 };
-use ark_bn254::Fq12;
+use ark_bls12_381::Fq12;
 use ark_ff::Field;
 use itertools::Itertools;
 use plonky2::{
@@ -78,7 +78,7 @@ use plonky2::{
     util::transpose,
 };
 
-use plonky2_bn254::fields::native::MyFq12;
+use plonky2_bls12_381::fields::native::MyFq12;
 use starky::{
     config::StarkConfig,
     constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
@@ -575,7 +575,7 @@ mod tests {
     use std::time::Instant;
 
     use crate::fields::fq12_u64::exp_u64::{Fq12ExpU64IONative, Fq12ExpU64Stark};
-    use ark_bn254::Fq12;
+    use ark_bls12_381::Fq12;
     use ark_ff::Field;
     use ark_std::UniformRand;
     use plonky2::{
