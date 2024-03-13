@@ -307,6 +307,7 @@ where
     inputs.resize(next_power_of_two, inputs.last().unwrap().clone());
     let log_num_io = next_power_of_two.trailing_zeros() as usize;
 
+    // ok
     let (inputs_constr, outputs, starky_proof) =
         fq12_exp_u64_circuit_with_proof_target::<F, C, D>(builder, log_num_io);
 

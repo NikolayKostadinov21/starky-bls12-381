@@ -6,7 +6,7 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::constants::{LIMB_BITS, N_LIMBS};
+use crate::constants::{BLS_N_LIMBS, LIMB_BITS};
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 /// 2^-8 mod (2^64 - 2^32 + 1)
@@ -23,7 +23,10 @@ pub fn eval_packed_generic_addcy<P: PackedField>(
 ) {
     // xとyとzの長さは同じ
     debug_assert!(
-        x.len() == N_LIMBS && y.len() == N_LIMBS && z.len() == N_LIMBS && given_cy.len() == N_LIMBS
+        x.len() == BLS_N_LIMBS
+            && y.len() == BLS_N_LIMBS
+            && z.len() == BLS_N_LIMBS
+            && given_cy.len() == BLS_N_LIMBS
     );
 
     let overflow = P::Scalar::from_canonical_u64(1u64 << LIMB_BITS);
@@ -52,7 +55,7 @@ pub fn eval_packed_generic_addcy<P: PackedField>(
     yield_constr.constraint(filter * (cy - given_cy[0]));
 
     // given_cyの高次の項は全て0
-    for i in 1..N_LIMBS {
+    for i in 1..BLS_N_LIMBS {
         yield_constr.constraint(filter * given_cy[i]);
     }
 }
@@ -62,13 +65,16 @@ pub fn eval_ext_circuit_addcy<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     filter: ExtensionTarget<D>,
-    x: &[ExtensionTarget<D>],
+    x: &[ExtensionTarget<D>], // modulus
     y: &[ExtensionTarget<D>],
     z: &[ExtensionTarget<D>],
     given_cy: &[ExtensionTarget<D>],
 ) {
     debug_assert!(
-        x.len() == N_LIMBS && y.len() == N_LIMBS && z.len() == N_LIMBS && given_cy.len() == N_LIMBS
+        x.len() == BLS_N_LIMBS
+            && y.len() == BLS_N_LIMBS
+            && z.len() == BLS_N_LIMBS
+            && given_cy.len() == BLS_N_LIMBS
     );
 
     // 2^LIMB_BITS in the base field
@@ -105,7 +111,7 @@ pub fn eval_ext_circuit_addcy<F: RichField + Extendable<D>, const D: usize>(
 
     yield_constr.constraint(builder, bit_filter);
     yield_constr.constraint(builder, cy_filter);
-    for i in 1..N_LIMBS {
+    for i in 1..BLS_N_LIMBS {
         let t = builder.mul_extension(filter, given_cy[i]);
         yield_constr.constraint(builder, t);
     }

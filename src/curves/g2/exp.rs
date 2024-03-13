@@ -1,10 +1,10 @@
 //    a      |      b      |   output   |  flags   | rotate_witness |  io_pulses   |     lookups         |
-// 4*N_LIMBS |  4*N_LIMBS  | 40*N_LIMBS |   14     |       2        |  1+4*c.num_io  | 1+2*NUM_RANGE_CHECK |
-//<------------------------------------------------>main_cols: 48*N_LIMBS + 14
-//<----------------------------------->range_check(start: 0, end: 48*N_LIMBS-6))
+// 4*BLS_N_LIMBS |  4*BLS_N_LIMBS  | 40*BLS_N_LIMBS |   14     |       2        |  1+4*c.num_io  | 1+2*NUM_RANGE_CHECK |
+//<------------------------------------------------>main_cols: 48*BLS_N_LIMBS + 14
+//<----------------------------------->range_check(start: 0, end: 48*BLS_N_LIMBS-6))
 
 fn constants(num_io: usize) -> ExpStarkConstants {
-    let start_flags_col = 48 * N_LIMBS;
+    let start_flags_col = 48 * BLS_N_LIMBS;
     let num_main_cols = start_flags_col + NUM_FLAGS_COLS;
 
     let start_periodic_pulse_col = num_main_cols;
@@ -12,7 +12,7 @@ fn constants(num_io: usize) -> ExpStarkConstants {
     let start_lookups_col = start_io_pulses_col + 1 + 4 * num_io;
 
     let start_range_check_col = 0;
-    let num_range_check_cols = 48 * N_LIMBS - 6;
+    let num_range_check_cols = 48 * BLS_N_LIMBS - 6;
     let end_range_check_col = start_range_check_col + num_range_check_cols;
 
     let num_columns = start_lookups_col + 1 + 2 * num_range_check_cols;
@@ -59,7 +59,7 @@ use starky::{
 };
 
 use crate::{
-    constants::{ExpStarkConstants, N_LIMBS},
+    constants::{ExpStarkConstants, BLS_N_LIMBS},
     curves::g1::exp::get_pulse_positions,
     curves::g2::muladd::{
         eval_g2_add, eval_g2_add_circuit, eval_g2_double, eval_g2_double_circuit, generate_g2_add,
@@ -186,10 +186,10 @@ pub fn generate_g2_exp_first_row<F: RichField>(
     let is_add_col = start_flag_col + 4;
     let a = x;
     let b = offset;
-    let a_x: [[F; N_LIMBS]; 2] = fq2_to_columns(a.x).map(i64_to_column_positive);
-    let a_y: [[F; N_LIMBS]; 2] = fq2_to_columns(a.y).map(i64_to_column_positive);
-    let b_x: [[F; N_LIMBS]; 2] = fq2_to_columns(b.x).map(i64_to_column_positive);
-    let b_y: [[F; N_LIMBS]; 2] = fq2_to_columns(b.y).map(i64_to_column_positive);
+    let a_x: [[F; BLS_N_LIMBS]; 2] = fq2_to_columns(a.x).map(i64_to_column_positive);
+    let a_y: [[F; BLS_N_LIMBS]; 2] = fq2_to_columns(a.y).map(i64_to_column_positive);
+    let b_x: [[F; BLS_N_LIMBS]; 2] = fq2_to_columns(b.x).map(i64_to_column_positive);
+    let b_y: [[F; BLS_N_LIMBS]; 2] = fq2_to_columns(b.y).map(i64_to_column_positive);
     let is_add = lv[is_add_col];
     let output = if is_add == F::ONE {
         generate_g2_add(a_x, a_y, b_x, b_y)
@@ -288,7 +288,7 @@ impl<F: RichField + Extendable<D>, const D: usize> G2ExpStark<F, D> {
         }
         let output = {
             let last_row = rows.last().unwrap();
-            let mut cur_col = 4 * N_LIMBS;
+            let mut cur_col = 4 * BLS_N_LIMBS;
             let b_x = read_fq2(last_row, &mut cur_col);
             let b_y = read_fq2(last_row, &mut cur_col);
             let b_x_fq2: Fq2 = columns_to_fq2(b_x);

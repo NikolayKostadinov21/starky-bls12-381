@@ -5,7 +5,7 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
-use crate::constants::N_LIMBS;
+use crate::constants::BLS_N_LIMBS;
 
 /// Return an array of `N` zeros of type T.
 pub(crate) fn pol_zero<T, const N: usize>() -> [T; N]
@@ -45,12 +45,12 @@ pub fn pol_add_assign_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
 
 /// Return a(x) + b(x); returned array is bigger than necessary to
 /// make the interface consistent with `pol_mul_wide`.
-pub fn pol_add<T>(a: [T; N_LIMBS], b: [T; N_LIMBS]) -> [T; 2 * N_LIMBS - 1]
+pub fn pol_add<T>(a: [T; BLS_N_LIMBS], b: [T; BLS_N_LIMBS]) -> [T; 2 * BLS_N_LIMBS - 1]
 where
     T: Add<Output = T> + Copy + Default,
 {
     let mut sum = pol_zero();
-    for i in 0..N_LIMBS {
+    for i in 0..BLS_N_LIMBS {
         sum[i] = a[i] + b[i];
     }
     sum
@@ -67,12 +67,29 @@ where
     sum
 }
 
-pub fn pol_add_wide<T>(a: [T; 2 * N_LIMBS - 1], b: [T; 2 * N_LIMBS - 1]) -> [T; 2 * N_LIMBS - 1]
+pub fn pol_add_wide<T>(
+    a: [T; 2 * BLS_N_LIMBS - 1],
+    b: [T; 2 * BLS_N_LIMBS - 1],
+) -> [T; 2 * BLS_N_LIMBS - 1]
 where
     T: Add<Output = T> + Copy + Default,
 {
     let mut sum = pol_zero();
-    for i in 0..2 * N_LIMBS - 1 {
+    for i in 0..2 * BLS_N_LIMBS - 1 {
+        sum[i] = a[i] + b[i];
+    }
+    sum
+}
+
+pub fn pol_add_wide_bls<T>(
+    a: [T; 2 * BLS_N_LIMBS - 1],
+    b: [T; 2 * BLS_N_LIMBS - 1],
+) -> [T; 2 * BLS_N_LIMBS - 1]
+where
+    T: Add<Output = T> + Copy + Default,
+{
+    let mut sum = pol_zero();
+    for i in 0..2 * BLS_N_LIMBS - 1 {
         sum[i] = a[i] + b[i];
     }
     sum
@@ -80,12 +97,12 @@ where
 
 pub fn pol_add_wide_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    a: [ExtensionTarget<D>; 2 * N_LIMBS - 1],
-    b: [ExtensionTarget<D>; 2 * N_LIMBS - 1],
-) -> [ExtensionTarget<D>; 2 * N_LIMBS - 1] {
+    a: [ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1],
+    b: [ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1],
+) -> [ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1] {
     let zero = builder.zero_extension();
-    let mut diff = [zero; 2 * N_LIMBS - 1];
-    for i in 0..2 * N_LIMBS - 1 {
+    let mut diff = [zero; 2 * BLS_N_LIMBS - 1];
+    for i in 0..2 * BLS_N_LIMBS - 1 {
         diff[i] = builder.add_extension(a[i], b[i]);
     }
     diff
@@ -106,12 +123,12 @@ pub fn pol_add_normal_ext_circuit<F: RichField + Extendable<D>, const D: usize, 
 
 pub fn pol_add_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    a: [ExtensionTarget<D>; N_LIMBS],
-    b: [ExtensionTarget<D>; N_LIMBS],
-) -> [ExtensionTarget<D>; 2 * N_LIMBS - 1] {
+    a: [ExtensionTarget<D>; BLS_N_LIMBS],
+    b: [ExtensionTarget<D>; BLS_N_LIMBS],
+) -> [ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1] {
     let zero = builder.zero_extension();
-    let mut sum = [zero; 2 * N_LIMBS - 1];
-    for i in 0..N_LIMBS {
+    let mut sum = [zero; 2 * BLS_N_LIMBS - 1];
+    for i in 0..BLS_N_LIMBS {
         sum[i] = builder.add_extension(a[i], b[i]);
     }
     sum
@@ -119,12 +136,12 @@ pub fn pol_add_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
 
 /// Return a(x) - b(x); returned array is bigger than necessary to
 /// make the interface consistent with `pol_mul_wide`.
-pub fn pol_sub<T>(a: [T; N_LIMBS], b: [T; N_LIMBS]) -> [T; 2 * N_LIMBS - 1]
+pub fn pol_sub<T>(a: [T; BLS_N_LIMBS], b: [T; BLS_N_LIMBS]) -> [T; 2 * BLS_N_LIMBS - 1]
 where
     T: Sub<Output = T> + Copy + Default,
 {
     let mut diff = pol_zero();
-    for i in 0..N_LIMBS {
+    for i in 0..BLS_N_LIMBS {
         diff[i] = a[i] - b[i];
     }
     diff
@@ -141,12 +158,29 @@ where
     diff
 }
 
-pub fn pol_sub_wide<T>(a: [T; 2 * N_LIMBS - 1], b: [T; 2 * N_LIMBS - 1]) -> [T; 2 * N_LIMBS - 1]
+pub fn pol_sub_wide<T>(
+    a: [T; 2 * BLS_N_LIMBS - 1],
+    b: [T; 2 * BLS_N_LIMBS - 1],
+) -> [T; 2 * BLS_N_LIMBS - 1]
 where
     T: Sub<Output = T> + Copy + Default,
 {
     let mut diff = pol_zero();
-    for i in 0..2 * N_LIMBS - 1 {
+    for i in 0..2 * BLS_N_LIMBS - 1 {
+        diff[i] = a[i] - b[i];
+    }
+    diff
+}
+
+pub fn pol_sub_wide_bls<T>(
+    a: [T; 2 * BLS_N_LIMBS - 1],
+    b: [T; 2 * BLS_N_LIMBS - 1],
+) -> [T; 2 * BLS_N_LIMBS - 1]
+where
+    T: Sub<Output = T> + Copy + Default,
+{
+    let mut diff = pol_zero();
+    for i in 0..2 * BLS_N_LIMBS - 1 {
         diff[i] = a[i] - b[i];
     }
     diff
@@ -154,12 +188,12 @@ where
 
 pub fn pol_sub_wide_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    a: [ExtensionTarget<D>; 2 * N_LIMBS - 1],
-    b: [ExtensionTarget<D>; 2 * N_LIMBS - 1],
-) -> [ExtensionTarget<D>; 2 * N_LIMBS - 1] {
+    a: [ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1],
+    b: [ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1],
+) -> [ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1] {
     let zero = builder.zero_extension();
-    let mut diff = [zero; 2 * N_LIMBS - 1];
-    for i in 0..2 * N_LIMBS - 1 {
+    let mut diff = [zero; 2 * BLS_N_LIMBS - 1];
+    for i in 0..2 * BLS_N_LIMBS - 1 {
         diff[i] = builder.sub_extension(a[i], b[i]);
     }
     diff
@@ -180,12 +214,12 @@ pub fn pol_sub_normal_ext_circuit<F: RichField + Extendable<D>, const D: usize, 
 
 pub fn pol_sub_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    a: [ExtensionTarget<D>; N_LIMBS],
-    b: [ExtensionTarget<D>; N_LIMBS],
-) -> [ExtensionTarget<D>; 2 * N_LIMBS - 1] {
+    a: [ExtensionTarget<D>; BLS_N_LIMBS],
+    b: [ExtensionTarget<D>; BLS_N_LIMBS],
+) -> [ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1] {
     let zero = builder.zero_extension();
-    let mut diff = [zero; 2 * N_LIMBS - 1];
-    for i in 0..N_LIMBS {
+    let mut diff = [zero; 2 * BLS_N_LIMBS - 1];
+    for i in 0..BLS_N_LIMBS {
         diff[i] = builder.sub_extension(a[i], b[i]);
     }
     diff
@@ -218,11 +252,24 @@ pub fn pol_sub_assign_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
 /// NB: The caller is responsible for ensuring that no undesired
 /// overflow occurs during the calculation of the coefficients of the
 /// product.
-pub fn pol_mul_wide<T>(a: [T; N_LIMBS], b: [T; N_LIMBS]) -> [T; 2 * N_LIMBS - 1]
+pub fn pol_mul_wide<T>(a: [T; BLS_N_LIMBS], b: [T; BLS_N_LIMBS]) -> [T; 2 * BLS_N_LIMBS - 1]
 where
     T: AddAssign + Copy + Mul<Output = T> + Default,
 {
-    let mut res = [T::default(); 2 * N_LIMBS - 1];
+    let mut res = [T::default(); 2 * BLS_N_LIMBS - 1];
+    for (i, &ai) in a.iter().enumerate() {
+        for (j, &bj) in b.iter().enumerate() {
+            res[i + j] += ai * bj;
+        }
+    }
+    res
+}
+
+pub fn pol_mul_wide_bls<T>(a: [T; BLS_N_LIMBS], b: [T; BLS_N_LIMBS]) -> [T; 2 * BLS_N_LIMBS - 1]
+where
+    T: AddAssign + Copy + Mul<Output = T> + Default,
+{
+    let mut res = [T::default(); 2 * BLS_N_LIMBS - 1];
     for (i, &ai) in a.iter().enumerate() {
         for (j, &bj) in b.iter().enumerate() {
             res[i + j] += ai * bj;
@@ -258,11 +305,11 @@ pub fn pol_mul_scalar_ext_circuit<F: RichField + Extendable<D>, const D: usize, 
 
 pub fn pol_mul_wide_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    a: [ExtensionTarget<D>; N_LIMBS],
-    b: [ExtensionTarget<D>; N_LIMBS],
-) -> [ExtensionTarget<D>; 2 * N_LIMBS - 1] {
+    a: [ExtensionTarget<D>; BLS_N_LIMBS],
+    b: [ExtensionTarget<D>; BLS_N_LIMBS],
+) -> [ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1] {
     let zero = builder.zero_extension();
-    let mut res = [zero; 2 * N_LIMBS - 1];
+    let mut res = [zero; 2 * BLS_N_LIMBS - 1];
     for (i, &ai) in a.iter().enumerate() {
         for (j, &bj) in b.iter().enumerate() {
             res[i + j] = builder.mul_add_extension(ai, bj, res[i + j]);
@@ -271,11 +318,11 @@ pub fn pol_mul_wide_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     res
 }
 
-pub fn pol_mul_wide2<T>(a: [T; N_LIMBS + 1], b: [T; N_LIMBS]) -> [T; 2 * N_LIMBS]
+pub fn pol_mul_wide2<T>(a: [T; BLS_N_LIMBS + 1], b: [T; BLS_N_LIMBS]) -> [T; 2 * BLS_N_LIMBS]
 where
     T: AddAssign + Copy + Mul<Output = T> + Default,
 {
-    let mut res = [T::default(); 2 * N_LIMBS];
+    let mut res = [T::default(); 2 * BLS_N_LIMBS];
     for (i, &ai) in a.iter().enumerate() {
         for (j, &bj) in b.iter().enumerate() {
             res[i + j] += ai * bj;
@@ -286,11 +333,11 @@ where
 
 pub fn pol_mul_wide2_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    a: [ExtensionTarget<D>; N_LIMBS + 1],
-    b: [ExtensionTarget<D>; N_LIMBS],
-) -> [ExtensionTarget<D>; 2 * N_LIMBS] {
+    a: [ExtensionTarget<D>; BLS_N_LIMBS + 1],
+    b: [ExtensionTarget<D>; BLS_N_LIMBS],
+) -> [ExtensionTarget<D>; 2 * BLS_N_LIMBS] {
     let zero = builder.zero_extension();
-    let mut res = [zero; 2 * N_LIMBS];
+    let mut res = [zero; 2 * BLS_N_LIMBS];
     for (i, &ai) in a.iter().enumerate() {
         for (j, &bj) in b.iter().enumerate() {
             res[i + j] = builder.mul_add_extension(ai, bj, res[i + j]);
@@ -317,12 +364,12 @@ where
 
 pub fn pol_mul_lo_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    a: [ExtensionTarget<D>; N_LIMBS],
-    b: [ExtensionTarget<D>; N_LIMBS],
-) -> [ExtensionTarget<D>; N_LIMBS] {
+    a: [ExtensionTarget<D>; BLS_N_LIMBS],
+    b: [ExtensionTarget<D>; BLS_N_LIMBS],
+) -> [ExtensionTarget<D>; BLS_N_LIMBS] {
     let zero = builder.zero_extension();
-    let mut res = [zero; N_LIMBS];
-    for deg in 0..N_LIMBS {
+    let mut res = [zero; BLS_N_LIMBS];
+    for deg in 0..BLS_N_LIMBS {
         for i in 0..=deg {
             let j = deg - i;
             res[deg] = builder.mul_add_extension(a[i], b[j], res[deg]);

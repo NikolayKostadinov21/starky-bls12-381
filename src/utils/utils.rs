@@ -15,7 +15,7 @@ use plonky2::util::transpose;
 use plonky2_bls12_381::fields::native::MyFq12;
 
 use super::flags::NUM_INPUT_LIMBS;
-use crate::constants::{LIMB_BITS, N_LIMBS};
+use crate::constants::{BLS_LIMB_BITS, BLS_N_LIMBS, LIMB_BITS};
 
 pub fn is_power_of_two(num: usize) -> bool {
     num != 0 && num & (num - 1) == 0
@@ -33,7 +33,7 @@ pub fn fq_to_u32_columns<F: RichField>(x: Fq) -> [F; NUM_INPUT_LIMBS] {
     x_u32_limbs.try_into().unwrap()
 }
 
-pub fn fq_to_u16_columns<F: RichField>(x: Fq) -> [F; N_LIMBS] {
+pub fn fq_to_u16_columns<F: RichField>(x: Fq) -> [F; BLS_N_LIMBS] {
     let columns = fq_to_columns(x);
     columns.map(|x| F::from_canonical_u16(x as u16))
 }
@@ -47,13 +47,13 @@ pub fn read_u32_fq<F: Clone + core::fmt::Debug>(
     output.try_into().unwrap()
 }
 
-pub fn read_u16_fq<F: Clone + core::fmt::Debug>(lv: &[F], cur_col: &mut usize) -> [F; N_LIMBS] {
-    let output = lv[*cur_col..*cur_col + N_LIMBS].to_vec();
-    *cur_col += N_LIMBS;
+pub fn read_u16_fq<F: Clone + core::fmt::Debug>(lv: &[F], cur_col: &mut usize) -> [F; BLS_N_LIMBS] {
+    let output = lv[*cur_col..*cur_col + BLS_N_LIMBS].to_vec();
+    *cur_col += BLS_N_LIMBS;
     output.try_into().unwrap()
 }
 
-pub fn u16_columns_to_u32_columns<P: PackedField>(x: [P; N_LIMBS]) -> [P; NUM_INPUT_LIMBS] {
+pub fn u16_columns_to_u32_columns<P: PackedField>(x: [P; BLS_N_LIMBS]) -> [P; NUM_INPUT_LIMBS] {
     let base = P::Scalar::from_canonical_u32(1 << LIMB_BITS);
     x.chunks(2)
         .map(|chunk| chunk[0] + base * chunk[1])
@@ -64,7 +64,7 @@ pub fn u16_columns_to_u32_columns<P: PackedField>(x: [P; N_LIMBS]) -> [P; NUM_IN
 
 pub fn u16_columns_to_u32_columns_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    x: [ExtensionTarget<D>; N_LIMBS],
+    x: [ExtensionTarget<D>; BLS_N_LIMBS],
 ) -> [ExtensionTarget<D>; NUM_INPUT_LIMBS] {
     let base = builder.constant_extension(F::Extension::from_canonical_u32(1 << LIMB_BITS));
     x.chunks(2)
@@ -75,7 +75,7 @@ pub fn u16_columns_to_u32_columns_circuit<F: RichField + Extendable<D>, const D:
 }
 pub fn u16_columns_to_u32_columns_base_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    x: [Target; N_LIMBS],
+    x: [Target; BLS_N_LIMBS],
 ) -> [Target; NUM_INPUT_LIMBS] {
     let base = builder.constant(F::from_canonical_u32(1 << LIMB_BITS));
     x.chunks(2)
@@ -148,15 +148,36 @@ pub fn columns_to_bigint<const N: usize>(limbs: &[i64; N]) -> BigInt {
     pos - neg
 }
 
-pub fn bigint_to_columns<const N: usize>(num: &BigInt) -> [i64; N] {
-    assert!(num.bits() <= 16 * N as u64);
+// pub fn bigint_to_columns<const N: usize>(num: &BigInt) -> [i64; N] {
+//     assert!(num.bits() <= 16 * N as u64);
+//     let mut output = [0i64; N];
+//     for (i, limb) in num.iter_u32_digits().enumerate() {
+//         output[2 * i] = limb as u16 as i64;
+//         if (limb >> LIMB_BITS) == 0 {
+//             continue;
+//         }
+//         output[2 * i + 1] = (limb >> LIMB_BITS) as u16 as i64;
+//     }
+//     if num.sign() == Sign::Minus {
+//         for c in output.iter_mut() {
+//             *c = -*c;
+//         }
+//     }
+//     output
+// }
+
+pub fn bls_bigint_to_columns<const N: usize>(num: &BigInt) -> [i64; N] {
+    assert!(num.bits() <= 24 * N as u64);
+    println!("Enters after assert");
     let mut output = [0i64; N];
+    println!("num.iter_u32_digits: {:?}", num.iter_u32_digits().len());
     for (i, limb) in num.iter_u32_digits().enumerate() {
+        println!("Enters after loop");
         output[2 * i] = limb as u16 as i64;
-        if (limb >> LIMB_BITS) == 0 {
+        if (limb >> BLS_LIMB_BITS) == 0 {
             continue;
         }
-        output[2 * i + 1] = (limb >> LIMB_BITS) as u16 as i64;
+        output[2 * i + 1] = (limb >> BLS_LIMB_BITS) as u16 as i64;
     }
     if num.sign() == Sign::Minus {
         for c in output.iter_mut() {
@@ -166,12 +187,12 @@ pub fn bigint_to_columns<const N: usize>(num: &BigInt) -> [i64; N] {
     output
 }
 
-pub fn fq_to_columns(x: Fq) -> [i64; N_LIMBS] {
+pub fn fq_to_columns(x: Fq) -> [i64; BLS_N_LIMBS] {
     let x_biguint: BigUint = x.into();
-    bigint_to_columns(&x_biguint.into())
+    bls_bigint_to_columns(&x_biguint.into())
 }
 
-pub fn fq12_to_columns(x: Fq12) -> [[i64; N_LIMBS]; 12] {
+pub fn fq12_to_columns(x: Fq12) -> [[i64; BLS_N_LIMBS]; 12] {
     let x_myfq12: MyFq12 = x.into();
     x_myfq12
         .coeffs
@@ -182,7 +203,7 @@ pub fn fq12_to_columns(x: Fq12) -> [[i64; N_LIMBS]; 12] {
         .unwrap()
 }
 
-pub fn fq2_to_columns(x: Fq2) -> [[i64; N_LIMBS]; 2] {
+pub fn fq2_to_columns(x: Fq2) -> [[i64; BLS_N_LIMBS]; 2] {
     [x.c0, x.c1].map(|c| fq_to_columns(c.clone()))
 }
 
@@ -192,7 +213,7 @@ pub fn columns_to_fq<F: PrimeField64, const N: usize>(column: &[F; N]) -> Fq {
     x.to_biguint().unwrap().into()
 }
 
-pub fn columns_to_fq2<F: PrimeField64>(column: [[F; N_LIMBS]; 2]) -> Fq2 {
+pub fn columns_to_fq2<F: PrimeField64>(column: [[F; BLS_N_LIMBS]; 2]) -> Fq2 {
     let coeffs = column
         .iter()
         .map(|column| columns_to_fq(column))

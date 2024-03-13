@@ -1,13 +1,12 @@
-use crate::constants::N_LIMBS;
+use crate::constants::BLS_N_LIMBS;
 use crate::modular::modular::{
-    bn254_base_modulus_bigint, bn254_base_modulus_packfield, eval_modular_op,
-    eval_modular_op_circuit, generate_modular_op, read_modulus_aux, read_u256, write_modulus_aux,
-    write_u256, ModulusAux,
+    bls12381_base_modulus_packfield, eval_modular_op, eval_modular_op_circuit, generate_modular_op,
+    read_modulus_aux, read_u256, read_u384, write_modulus_aux, write_u256, write_u384, ModulusAux,
 };
 use crate::modular::pol_utils::{
-    pol_add_assign, pol_add_assign_ext_circuit, pol_add_wide, pol_add_wide_ext_circuit,
-    pol_mul_scalar, pol_mul_scalar_ext_circuit, pol_mul_wide, pol_mul_wide_ext_circuit,
-    pol_sub_assign, pol_sub_assign_ext_circuit, pol_sub_wide, pol_sub_wide_ext_circuit,
+    pol_add_assign, pol_add_assign_ext_circuit, pol_add_wide_bls, pol_add_wide_ext_circuit,
+    pol_mul_scalar, pol_mul_scalar_ext_circuit, pol_mul_wide_bls, pol_mul_wide_ext_circuit,
+    pol_sub_assign, pol_sub_assign_ext_circuit, pol_sub_wide_bls, pol_sub_wide_ext_circuit,
 };
 use crate::utils::utils::positive_column_to_i64;
 use core::fmt::Debug;
@@ -22,23 +21,23 @@ use plonky2::{
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 pub fn pol_mul_fq12<T>(
-    a_coeffs: Vec<[T; N_LIMBS]>,
-    b_coeffs: Vec<[T; N_LIMBS]>,
-    xi: T,
-) -> Vec<[T; 2 * N_LIMBS - 1]>
+    a_coeffs: Vec<[T; BLS_N_LIMBS]>,
+    b_coeffs: Vec<[T; BLS_N_LIMBS]>,
+    const_one: T,
+) -> Vec<[T; 2 * BLS_N_LIMBS - 1]>
 where
     T: Add<Output = T> + AddAssign + Sub<Output = T> + SubAssign + Mul<Output = T> + Copy + Default,
 {
-    let mut a0b0_coeffs: Vec<[T; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
-    let mut a0b1_coeffs: Vec<[T; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
-    let mut a1b0_coeffs: Vec<[T; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
-    let mut a1b1_coeffs: Vec<[T; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a0b0_coeffs: Vec<[T; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a0b1_coeffs: Vec<[T; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a1b0_coeffs: Vec<[T; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a1b1_coeffs: Vec<[T; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
     for i in 0..6 {
         for j in 0..6 {
-            let coeff00 = pol_mul_wide(a_coeffs[i], b_coeffs[j]);
-            let coeff01 = pol_mul_wide(a_coeffs[i], b_coeffs[j + 6]);
-            let coeff10 = pol_mul_wide(a_coeffs[i + 6], b_coeffs[j]);
-            let coeff11 = pol_mul_wide(a_coeffs[i + 6], b_coeffs[j + 6]);
+            let coeff00 = pol_mul_wide_bls(a_coeffs[i], b_coeffs[j]);
+            let coeff01 = pol_mul_wide_bls(a_coeffs[i], b_coeffs[j + 6]);
+            let coeff10 = pol_mul_wide_bls(a_coeffs[i + 6], b_coeffs[j]);
+            let coeff11 = pol_mul_wide_bls(a_coeffs[i + 6], b_coeffs[j + 6]);
             if i + j < a0b0_coeffs.len() {
                 pol_add_assign(&mut a0b0_coeffs[i + j], &coeff00);
                 pol_add_assign(&mut a0b1_coeffs[i + j], &coeff01);
@@ -53,20 +52,20 @@ where
         }
     }
 
-    let mut a0b0_minus_a1b1: Vec<[T; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
-    let mut a0b1_plus_a1b0: Vec<[T; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a0b0_minus_a1b1: Vec<[T; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a0b1_plus_a1b0: Vec<[T; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
     for i in 0..11 {
-        let a0b0_minus_a1b1_entry = pol_sub_wide(a0b0_coeffs[i], a1b1_coeffs[i]);
-        let a0b1_plus_a1b0_entry = pol_add_wide(a0b1_coeffs[i], a1b0_coeffs[i]);
+        let a0b0_minus_a1b1_entry = pol_sub_wide_bls(a0b0_coeffs[i], a1b1_coeffs[i]);
+        let a0b1_plus_a1b0_entry = pol_sub_wide_bls(a0b1_coeffs[i], a1b0_coeffs[i]);
         a0b0_minus_a1b1.push(a0b0_minus_a1b1_entry);
         a0b1_plus_a1b0.push(a0b1_plus_a1b0_entry);
     }
 
-    let mut out_coeffs: Vec<[T; 2 * N_LIMBS - 1]> = Vec::with_capacity(12);
+    let mut out_coeffs: Vec<[T; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(12);
     for i in 0..6 {
         if i < 5 {
-            let nine_times_a0b0_minus_a1b1 = pol_mul_scalar(a0b0_minus_a1b1[i + 6], xi);
-            let mut coeff = pol_add_wide(a0b0_minus_a1b1[i], nine_times_a0b0_minus_a1b1);
+            let nine_times_a0b0_minus_a1b1 = pol_mul_scalar(a0b0_minus_a1b1[i + 6], const_one);
+            let mut coeff = pol_add_wide_bls(a0b0_minus_a1b1[i], nine_times_a0b0_minus_a1b1);
             pol_sub_assign(&mut coeff, &a0b1_plus_a1b0[i + 6]);
             out_coeffs.push(coeff);
         } else {
@@ -75,8 +74,8 @@ where
     }
     for i in 0..6 {
         if i < 5 {
-            let mut coeff = pol_add_wide(a0b1_plus_a1b0[i], a0b0_minus_a1b1[i + 6]);
-            let nine_times_a0b1_plus_a1b0 = pol_mul_scalar(a0b1_plus_a1b0[i + 6], xi);
+            let mut coeff = pol_add_wide_bls(a0b1_plus_a1b0[i], a0b0_minus_a1b1[i + 6]);
+            let nine_times_a0b1_plus_a1b0 = pol_mul_scalar(a0b1_plus_a1b0[i + 6], const_one);
             pol_add_assign(&mut coeff, &nine_times_a0b1_plus_a1b0);
             out_coeffs.push(coeff);
         } else {
@@ -88,14 +87,14 @@ where
 
 pub fn pol_mul_fq12_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    a_coeffs: Vec<[ExtensionTarget<D>; N_LIMBS]>,
-    b_coeffs: Vec<[ExtensionTarget<D>; N_LIMBS]>,
-    xi: F::Extension,
-) -> Vec<[ExtensionTarget<D>; 2 * N_LIMBS - 1]> {
-    let mut a0b0_coeffs: Vec<[ExtensionTarget<D>; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
-    let mut a0b1_coeffs: Vec<[ExtensionTarget<D>; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
-    let mut a1b0_coeffs: Vec<[ExtensionTarget<D>; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
-    let mut a1b1_coeffs: Vec<[ExtensionTarget<D>; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
+    a_coeffs: Vec<[ExtensionTarget<D>; BLS_N_LIMBS]>,
+    b_coeffs: Vec<[ExtensionTarget<D>; BLS_N_LIMBS]>,
+    const_one: F::Extension,
+) -> Vec<[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]> {
+    let mut a0b0_coeffs: Vec<[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a0b1_coeffs: Vec<[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a1b0_coeffs: Vec<[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a1b1_coeffs: Vec<[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
     for i in 0..6 {
         for j in 0..6 {
             let coeff00 = pol_mul_wide_ext_circuit(builder, a_coeffs[i], b_coeffs[j]);
@@ -116,8 +115,9 @@ pub fn pol_mul_fq12_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
         }
     }
 
-    let mut a0b0_minus_a1b1: Vec<[ExtensionTarget<D>; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
-    let mut a0b1_plus_a1b0: Vec<[ExtensionTarget<D>; 2 * N_LIMBS - 1]> = Vec::with_capacity(11);
+    let mut a0b0_minus_a1b1: Vec<[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]> =
+        Vec::with_capacity(11);
+    let mut a0b1_plus_a1b0: Vec<[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(11);
     for i in 0..11 {
         let a0b0_minus_a1b1_entry =
             pol_sub_wide_ext_circuit(builder, a0b0_coeffs[i], a1b1_coeffs[i]);
@@ -127,11 +127,11 @@ pub fn pol_mul_fq12_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
         a0b1_plus_a1b0.push(a0b1_plus_a1b0_entry);
     }
 
-    let mut out_coeffs: Vec<[ExtensionTarget<D>; 2 * N_LIMBS - 1]> = Vec::with_capacity(12);
+    let mut out_coeffs: Vec<[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]> = Vec::with_capacity(12);
     for i in 0..6 {
         if i < 5 {
             let nine_times_a0b0_minus_a1b1 =
-                pol_mul_scalar_ext_circuit(builder, a0b0_minus_a1b1[i + 6], xi);
+                pol_mul_scalar_ext_circuit(builder, a0b0_minus_a1b1[i + 6], const_one);
             let mut coeff =
                 pol_add_wide_ext_circuit(builder, a0b0_minus_a1b1[i], nine_times_a0b0_minus_a1b1);
             pol_sub_assign_ext_circuit(builder, &mut coeff, &a0b1_plus_a1b0[i + 6]);
@@ -145,7 +145,7 @@ pub fn pol_mul_fq12_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
             let mut coeff =
                 pol_add_wide_ext_circuit(builder, a0b1_plus_a1b0[i], a0b0_minus_a1b1[i + 6]);
             let nine_times_a0b1_plus_a1b0 =
-                pol_mul_scalar_ext_circuit(builder, a0b1_plus_a1b0[i + 6], xi);
+                pol_mul_scalar_ext_circuit(builder, a0b1_plus_a1b0[i + 6], const_one);
             pol_add_assign_ext_circuit(builder, &mut coeff, &nine_times_a0b1_plus_a1b0);
             out_coeffs.push(coeff);
         } else {
@@ -155,16 +155,24 @@ pub fn pol_mul_fq12_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     out_coeffs
 }
 
-/// 12*N_LIMBS
-pub fn write_fq12<F: Copy>(lv: &mut [F], input: [[F; N_LIMBS]; 12], cur_col: &mut usize) {
+/// 12*BLS_N_LIMBS
+pub fn write_fq12<F: Copy>(lv: &mut [F], input: [[F; BLS_N_LIMBS]; 12], cur_col: &mut usize) {
     assert!(input.len() == 12);
     input
         .iter()
         .for_each(|coeff| write_u256(lv, coeff, cur_col));
 }
 
-/// 12*N_LIMBS
-pub fn read_fq12<F: Copy + Debug>(lv: &[F], cur_col: &mut usize) -> [[F; N_LIMBS]; 12] {
+/// 12*BLS_N_LIMBS
+pub fn write_fq12_bls<F: Copy>(lv: &mut [F], input: [[F; BLS_N_LIMBS]; 12], cur_col: &mut usize) {
+    assert!(input.len() == 12);
+    input
+        .iter()
+        .for_each(|coeff| write_u384(lv, coeff, cur_col));
+}
+
+/// 12*BLS_N_LIMBS
+pub fn read_fq12<F: Copy + Debug>(lv: &[F], cur_col: &mut usize) -> [[F; BLS_N_LIMBS]; 12] {
     (0..12)
         .map(|_| read_u256(lv, cur_col))
         .collect_vec()
@@ -172,9 +180,18 @@ pub fn read_fq12<F: Copy + Debug>(lv: &[F], cur_col: &mut usize) -> [[F; N_LIMBS
         .unwrap()
 }
 
+/// 12*BLS_N_LIMBS
+pub fn read_fq12_bls<F: Copy + Debug>(lv: &[F], cur_col: &mut usize) -> [[F; BLS_N_LIMBS]; 12] {
+    (0..12)
+        .map(|_| read_u384(lv, cur_col))
+        .collect_vec()
+        .try_into()
+        .unwrap()
+}
+
 //
 pub struct Fq12Output<F> {
-    pub output: [[F; N_LIMBS]; 12],
+    pub output: [[F; BLS_N_LIMBS]; 12],
     pub auxs: [ModulusAux<F>; 12],
     pub quot_signs: [F; 12],
 }
@@ -182,7 +199,7 @@ pub struct Fq12Output<F> {
 impl<F: RichField + Default> Default for Fq12Output<F> {
     fn default() -> Self {
         Self {
-            output: [[F::ZERO; N_LIMBS]; 12],
+            output: [[F::ZERO; BLS_N_LIMBS]; 12],
             auxs: [ModulusAux::<F>::default(); 12],
             quot_signs: [F::ONE; 12],
         }
@@ -190,14 +207,14 @@ impl<F: RichField + Default> Default for Fq12Output<F> {
 }
 
 pub fn generate_fq12_mul<F: PrimeField64>(
-    x: [[F; N_LIMBS]; 12],
-    y: [[F; N_LIMBS]; 12],
+    x: [[F; BLS_N_LIMBS]; 12],
+    y: [[F; BLS_N_LIMBS]; 12],
 ) -> Fq12Output<F> {
-    let xi = 9;
-    let modulus = bn254_base_modulus_bigint();
+    let const_one = 1;
+    let modulus = bls12381_base_modulus_packfield();
     let x_i64 = x.map(positive_column_to_i64);
     let y_i64 = y.map(positive_column_to_i64);
-    let pol_input = pol_mul_fq12(x_i64.to_vec(), y_i64.to_vec(), xi);
+    let pol_input = pol_mul_fq12(x_i64.to_vec(), y_i64.to_vec(), const_one);
     let mut outputs = vec![];
     let mut auxs = vec![];
     let mut quot_signs = vec![];
@@ -214,12 +231,12 @@ pub fn generate_fq12_mul<F: PrimeField64>(
     }
 }
 
-/// 84*N_LIMBS
-/// range_check: 84*N_LIMBS - 12
+/// 84*BLS_N_LIMBS
+/// range_check: 84*BLS_N_LIMBS - 12
 pub fn write_fq12_output<F: Copy>(lv: &mut [F], output: &Fq12Output<F>, cur_col: &mut usize) {
-    // 12*N_LIMBS
+    // 12*BLS_N_LIMBS
     write_fq12(lv, output.output, cur_col);
-    // 12*(6*N_LIMBS - 1) = 72*N_LIMBS - 12
+    // 12*(6*BLS_N_LIMBS - 1) = 72*BLS_N_LIMBS - 12
     output.auxs.iter().for_each(|aux| {
         write_modulus_aux(lv, aux, cur_col);
     });
@@ -230,12 +247,12 @@ pub fn write_fq12_output<F: Copy>(lv: &mut [F], output: &Fq12Output<F>, cur_col:
     });
 }
 
-/// 84*N_LIMBS
+/// 84*BLS_N_LIMBS
 pub fn read_fq12_output<F: Copy + core::fmt::Debug>(
     lv: &[F],
     cur_col: &mut usize,
 ) -> Fq12Output<F> {
-    let output = read_fq12(lv, cur_col);
+    let output = read_fq12_bls(lv, cur_col);
     let auxs = (0..12).map(|_| read_modulus_aux(lv, cur_col)).collect_vec();
     let quot_signs = (0..12)
         .map(|_| {
@@ -254,13 +271,13 @@ pub fn read_fq12_output<F: Copy + core::fmt::Debug>(
 pub fn eval_fq12_mul<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
     filter: P,
-    x: [[P; N_LIMBS]; 12],
-    y: [[P; N_LIMBS]; 12],
+    x: [[P; BLS_N_LIMBS]; 12],
+    y: [[P; BLS_N_LIMBS]; 12],
     output: &Fq12Output<P>,
 ) {
-    let xi = P::Scalar::from_canonical_u32(9).into();
-    let input = pol_mul_fq12(x.to_vec(), y.to_vec(), xi);
-    let modulus = bn254_base_modulus_packfield();
+    let const_one = P::Scalar::from_canonical_u32(1).into();
+    let input = pol_mul_fq12(x.to_vec(), y.to_vec(), const_one);
+    let modulus = bls12381_base_modulus_packfield();
     (0..12).for_each(|i| {
         eval_modular_op(
             yield_constr,
@@ -278,14 +295,14 @@ pub fn eval_fq12_mul_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     filter: ExtensionTarget<D>,
-    x: [[ExtensionTarget<D>; N_LIMBS]; 12],
-    y: [[ExtensionTarget<D>; N_LIMBS]; 12],
+    x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 12],
+    y: [[ExtensionTarget<D>; BLS_N_LIMBS]; 12],
     output: &Fq12Output<ExtensionTarget<D>>,
 ) {
-    let xi = F::Extension::from_canonical_u32(9);
-    let input = pol_mul_fq12_ext_circuit(builder, x.to_vec(), y.to_vec(), xi);
-    let modulus: [F::Extension; N_LIMBS] = bn254_base_modulus_packfield();
-    let modulus = modulus.map(|x| builder.constant_extension(x));
+    let const_one = F::Extension::from_canonical_u32(1); // 1
+    let input = pol_mul_fq12_ext_circuit(builder, x.to_vec(), y.to_vec(), const_one);
+    let modulus: [F::Extension; BLS_N_LIMBS] = bls12381_base_modulus_packfield();
+    let modulus: [ExtensionTarget<D>; 24] = modulus.map(|x| builder.constant_extension(x));
     (0..12).for_each(|i| {
         eval_modular_op_circuit(
             builder,
@@ -342,7 +359,7 @@ mod tests {
         write_fq12_output,
     };
     use crate::{
-        constants::N_LIMBS,
+        constants::BLS_N_LIMBS,
         utils::range_check::{
             eval_split_u16_range_check, eval_split_u16_range_check_circuit,
             generate_split_u16_range_check, split_u16_range_check_pairs,
@@ -352,9 +369,9 @@ mod tests {
 
     use super::read_fq12;
 
-    const MAIN_COLS: usize = 108 * N_LIMBS + 1;
-    const START_RANGE_CHECK: usize = 24 * N_LIMBS;
-    const NUM_RANGE_CHECK: usize = 84 * N_LIMBS - 12;
+    const MAIN_COLS: usize = 108 * BLS_N_LIMBS + 1;
+    const START_RANGE_CHECK: usize = 24 * BLS_N_LIMBS;
+    const NUM_RANGE_CHECK: usize = 84 * BLS_N_LIMBS - 12;
     const END_RANGE_CHECK: usize = START_RANGE_CHECK + NUM_RANGE_CHECK;
 
     const COLUMNS: usize = MAIN_COLS + 1 + 6 * NUM_RANGE_CHECK;
@@ -392,17 +409,17 @@ mod tests {
 
                 let mut cur_col = 0;
 
-                write_fq12(&mut lv, x, &mut cur_col); // 12*N_LIMBS
-                write_fq12(&mut lv, y, &mut cur_col); // 12*N_LIMBS
-                write_fq12_output(&mut lv, &fq12_output, &mut cur_col); // 84*N_LIMBS
+                write_fq12(&mut lv, x, &mut cur_col); // 12*BLS_N_LIMBS
+                write_fq12(&mut lv, y, &mut cur_col); // 12*BLS_N_LIMBS
+                write_fq12_output(&mut lv, &fq12_output, &mut cur_col); // 84*BLS_N_LIMBS
 
                 // filter
                 lv[cur_col] = F::ONE;
                 cur_col += 1;
 
-                // MAIN_COLS = 2*12*N_LIMBS + 84*N_LIMBS + 1 = 108*N_LIMBS  + 1
-                // START_RANGE_CHECK = 24*N_LIMBS
-                // NUM_RANGE_CHECK = 84*N_LIMBS - 12
+                // MAIN_COLS = 2*12*BLS_N_LIMBS + 84*BLS_N_LIMBS + 1 = 108*BLS_N_LIMBS  + 1
+                // START_RANGE_CHECK = 24*BLS_N_LIMBS
+                // NUM_RANGE_CHECK = 84*BLS_N_LIMBS - 12
                 assert!(cur_col == MAIN_COLS);
 
                 rows.push(lv);

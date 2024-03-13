@@ -1,7 +1,7 @@
 //    a       |      b       |   output   |  flag  |  io_pulses     |     lookups         |
-// 12*N_LIMBS |  12*N_LIMBS  | 84*N_LIMBS |   6    |  1+4*c.num_io  | 1+6*NUM_RANGE_CHECK |
-//<------------------------------------------------->main_cols: 108*N_LIMBS + 6
-//                           <--------->range_check(start: 24*N_LIMBS, end: 108*N_LIMBS-12))
+// 12*BLS_N_LIMBS |  12*BLS_N_LIMBS  | 84*BLS_N_LIMBS |   6    |  1+4*c.num_io  | 1+6*NUM_RANGE_CHECK |
+//<------------------------------------------------->main_cols: 108*BLS_N_LIMBS + 6
+//                           <--------->range_check(start: 24*BLS_N_LIMBS, end: 108*BLS_N_LIMBS-12))
 
 pub struct ExpU64StarkConstants {
     pub num_columns: usize,
@@ -17,14 +17,14 @@ pub struct ExpU64StarkConstants {
 }
 
 fn constants(num_io: usize) -> ExpU64StarkConstants {
-    let start_flags_col = 108 * N_LIMBS;
+    let start_flags_col = 108 * BLS_N_LIMBS;
     let num_main_cols = start_flags_col + NUM_FLAGS_U64_COLS;
 
     let start_io_pulses_col = num_main_cols;
     let start_lookups_col = start_io_pulses_col + 1 + 4 * num_io;
 
-    let start_range_check_col = 24 * N_LIMBS;
-    let num_range_check_cols = 84 * N_LIMBS - 12;
+    let start_range_check_col = 24 * BLS_N_LIMBS;
+    let num_range_check_cols = 84 * BLS_N_LIMBS - 12;
     let end_range_check_col = start_range_check_col + num_range_check_cols;
 
     let num_columns = start_lookups_col + 1 + 6 * num_range_check_cols;
@@ -48,20 +48,23 @@ use std::marker::PhantomData;
 
 use super::flags_u64::{generate_flags_u64_first_row, generate_flags_u64_next_row};
 use crate::{
-    constants::N_LIMBS,
+    constants::BLS_N_LIMBS,
     fields::fq12::mul::{
-        eval_fq12_mul, eval_fq12_mul_circuit, generate_fq12_mul, read_fq12, read_fq12_output,
-        write_fq12, write_fq12_output, Fq12Output,
+        eval_fq12_mul, eval_fq12_mul_circuit, generate_fq12_mul, read_fq12, read_fq12_bls,
+        read_fq12_output, write_fq12_bls, write_fq12_output, Fq12Output,
     },
-    utils::equals::{fq12_equal_transition, fq12_equal_transition_circuit},
-    utils::equals::{vec_equal, vec_equal_circuit},
-    utils::pulse::{eval_pulse, eval_pulse_circuit, generate_pulse, get_pulse_col},
-    utils::range_check::{
-        eval_split_u16_range_check, eval_split_u16_range_check_circuit,
-        generate_split_u16_range_check, split_u16_range_check_pairs,
-    },
-    utils::utils::{
-        columns_to_fq12, fq_to_columns, fq_to_u16_columns, i64_to_column_positive, read_u16_fq,
+    utils::{
+        equals::{
+            fq12_equal_transition, fq12_equal_transition_circuit, vec_equal, vec_equal_circuit,
+        },
+        pulse::{eval_pulse, eval_pulse_circuit, generate_pulse, get_pulse_col},
+        range_check::{
+            eval_split_u16_range_check, eval_split_u16_range_check_circuit,
+            generate_split_u16_range_check, split_u16_range_check_pairs,
+        },
+        utils::{
+            columns_to_fq12, fq_to_columns, fq_to_u16_columns, i64_to_column_positive, read_u16_fq,
+        },
     },
 };
 use ark_bls12_381::Fq12;
@@ -96,14 +99,14 @@ pub struct Fq12ExpU64IONative {
     pub output: Fq12,
 }
 
-pub const FQ12_EXP_U64_IO_LEN: usize = 36 * N_LIMBS + 1;
+pub const FQ12_EXP_U64_IO_LEN: usize = 36 * BLS_N_LIMBS + 1;
 
-// 36*N_LIMBS + NUM_INPUT_LIMBS
+// 36*BLS_N_LIMBS + NUM_INPUT_LIMBS
 pub struct Fq12ExpU64IO<F> {
-    pub x: [[F; N_LIMBS]; 12],
-    pub offset: [[F; N_LIMBS]; 12],
+    pub x: [[F; BLS_N_LIMBS]; 12],
+    pub offset: [[F; BLS_N_LIMBS]; 12],
     pub exp_val: F,
-    pub output: [[F; N_LIMBS]; 12],
+    pub output: [[F; BLS_N_LIMBS]; 12],
 }
 
 pub fn fq12_exp_u64_io_to_columns<F: RichField>(
@@ -177,8 +180,8 @@ pub fn generate_fq12_exp_u64_first_row<F: RichField>(
         Fq12Output::default()
     };
     let mut cur_col = 0;
-    write_fq12(lv, a, &mut cur_col);
-    write_fq12(lv, b, &mut cur_col);
+    write_fq12_bls(lv, a, &mut cur_col);
+    write_fq12_bls(lv, b, &mut cur_col);
     write_fq12_output(lv, &output, &mut cur_col);
 }
 
@@ -187,8 +190,8 @@ pub fn generate_fq12_exp_u64_next_row<F: RichField>(lv: &[F], nv: &mut [F], star
     let is_mul_col = start_flag_col + 3;
 
     let mut cur_col = 0;
-    let a = read_fq12(lv, &mut cur_col);
-    let b = read_fq12(lv, &mut cur_col);
+    let a = read_fq12_bls(lv, &mut cur_col);
+    let b = read_fq12_bls(lv, &mut cur_col);
     let output = read_fq12_output(lv, &mut cur_col);
     let is_sq = lv[is_sq_col];
     let is_mul = lv[is_mul_col];
@@ -213,8 +216,8 @@ pub fn generate_fq12_exp_u64_next_row<F: RichField>(lv: &[F], nv: &mut [F], star
         Fq12Output::default()
     };
     cur_col = 0;
-    write_fq12(nv, next_a, &mut cur_col);
-    write_fq12(nv, next_b, &mut cur_col);
+    write_fq12_bls(nv, next_a, &mut cur_col);
+    write_fq12_bls(nv, next_b, &mut cur_col);
     write_fq12_output(nv, &next_output, &mut cur_col);
 }
 
@@ -269,7 +272,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Fq12ExpU64Stark<F, D> {
         }
         let output = {
             let last_row = rows.last().unwrap();
-            let mut cur_col = 12 * N_LIMBS;
+            let mut cur_col = 12 * BLS_N_LIMBS;
             let b = read_fq12(last_row, &mut cur_col);
             columns_to_fq12(b)
         };
@@ -330,8 +333,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for Fq12ExpU64Sta
         let nv = vars.next_values;
 
         let mut cur_col = 0;
-        let a = read_fq12(lv, &mut cur_col);
-        let b = read_fq12(lv, &mut cur_col);
+        let a = read_fq12_bls(lv, &mut cur_col);
+        let b = read_fq12_bls(lv, &mut cur_col);
         let output = read_fq12_output(lv, &mut cur_col);
         let is_mul = lv[is_mul_col];
         let is_sq = lv[is_sq_col];
@@ -364,8 +367,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for Fq12ExpU64Sta
 
         // transition
         cur_col = 0;
-        let next_a = read_fq12(nv, &mut cur_col);
-        let next_b = read_fq12(nv, &mut cur_col);
+        let next_a = read_fq12_bls(nv, &mut cur_col);
+        let next_b = read_fq12_bls(nv, &mut cur_col);
         // if is_double==F::ONE
         {
             fq12_equal_transition(yield_constr, is_not_final * is_sq, next_a, output.output);
@@ -425,8 +428,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for Fq12ExpU64Sta
         let nv = vars.next_values;
 
         let mut cur_col = 0;
-        let a = read_fq12(lv, &mut cur_col);
-        let b = read_fq12(lv, &mut cur_col);
+        let a = read_fq12_bls(lv, &mut cur_col);
+        let b = read_fq12_bls(lv, &mut cur_col);
         let output = read_fq12_output(lv, &mut cur_col);
         let is_mul = lv[is_mul_col];
         let is_sq = lv[is_sq_col];
@@ -481,8 +484,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for Fq12ExpU64Sta
 
         // transition
         cur_col = 0;
-        let next_a = read_fq12(nv, &mut cur_col);
-        let next_b = read_fq12(nv, &mut cur_col);
+        let next_a = read_fq12_bls(nv, &mut cur_col);
+        let next_b = read_fq12_bls(nv, &mut cur_col);
         // if is_sq==F::ONE
         {
             let is_not_final_and_sq = builder.mul_extension(is_not_final, is_sq);

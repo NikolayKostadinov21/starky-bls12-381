@@ -1,10 +1,10 @@
 //    a      |      b      |   output   |  flags   | rotate_witness |  io_pulses   |     lookups        |
-// 2*N_LIMBS |  2*N_LIMBS  | 20*N_LIMBS |   14     |       2        |  1+4*NUM_IO  | 1+2*(20*N_LIMBS-3) |
-//<------------------------------------------------>main_cols: 24*N_LIMBS + 14
-//<----------------------------------->range_check(start: 0, end: 24*N_LIMBS-3))
+// 2*BLS_N_LIMBS |  2*BLS_N_LIMBS  | 20*BLS_N_LIMBS |   14     |       2        |  1+4*NUM_IO  | 1+2*(20*BLS_N_LIMBS-3) |
+//<------------------------------------------------>main_cols: 24*BLS_N_LIMBS + 14
+//<----------------------------------->range_check(start: 0, end: 24*BLS_N_LIMBS-3))
 
 fn constants(num_io: usize) -> ExpStarkConstants {
-    let start_flags_col = 24 * N_LIMBS;
+    let start_flags_col = 24 * BLS_N_LIMBS;
     let num_main_cols = start_flags_col + NUM_FLAGS_COLS;
 
     let start_periodic_pulse_col = num_main_cols;
@@ -12,7 +12,7 @@ fn constants(num_io: usize) -> ExpStarkConstants {
     let start_lookups_col = start_io_pulses_col + 1 + 4 * num_io;
 
     let start_range_check_col = 0;
-    let num_range_check_cols = 24 * N_LIMBS - 3;
+    let num_range_check_cols = 24 * BLS_N_LIMBS - 3;
     let end_range_check_col = start_range_check_col + num_range_check_cols;
 
     let num_columns = start_lookups_col + 1 + 2 * num_range_check_cols;
@@ -58,7 +58,7 @@ use starky::{
 };
 
 use crate::{
-    constants::{ExpStarkConstants, N_LIMBS},
+    constants::{ExpStarkConstants, BLS_N_LIMBS},
     curves::g1::muladd::{
         eval_g1_add, eval_g1_add_circuit, eval_g1_double, eval_g1_double_circuit, generate_g1_add,
         generate_g1_double, read_g1_output, write_g1_output, G1Output,
@@ -272,7 +272,7 @@ impl<F: RichField + Extendable<D>, const D: usize> G1ExpStark<F, D> {
         }
         let output = {
             let last_row = rows.last().unwrap();
-            let mut cur_col = 2 * N_LIMBS;
+            let mut cur_col = 2 * BLS_N_LIMBS;
             let b_x = read_u256(last_row, &mut cur_col);
             let b_y = read_u256(last_row, &mut cur_col);
             let b_x_fq = columns_to_fq(&b_x);

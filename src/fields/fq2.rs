@@ -14,31 +14,34 @@ use crate::{
 };
 use core::fmt::Debug;
 
-use crate::constants::N_LIMBS;
+use crate::constants::BLS_N_LIMBS;
 use std::ops::*;
 
-pub fn to_wide_fq2<T>(x: [[T; N_LIMBS]; 2]) -> [[T; 2 * N_LIMBS - 1]; 2]
+pub fn to_wide_fq2<T>(x: [[T; BLS_N_LIMBS]; 2]) -> [[T; 2 * BLS_N_LIMBS - 1]; 2]
 where
     T: Default + Copy,
 {
-    let mut z = [[T::default(); 2 * N_LIMBS - 1]; 2];
-    z[0][..N_LIMBS].copy_from_slice(&x[0]);
-    z[1][..N_LIMBS].copy_from_slice(&x[1]);
+    let mut z = [[T::default(); 2 * BLS_N_LIMBS - 1]; 2];
+    z[0][..BLS_N_LIMBS].copy_from_slice(&x[0]);
+    z[1][..BLS_N_LIMBS].copy_from_slice(&x[1]);
     z
 }
 
 pub fn to_wide_fq2_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    x: [[ExtensionTarget<D>; N_LIMBS]; 2],
-) -> [[ExtensionTarget<D>; 2 * N_LIMBS - 1]; 2] {
+    x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+) -> [[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]; 2] {
     let zero = builder.zero_extension();
-    let mut z = [[zero; 2 * N_LIMBS - 1]; 2];
-    z[0][..N_LIMBS].copy_from_slice(&x[0]);
-    z[1][..N_LIMBS].copy_from_slice(&x[1]);
+    let mut z = [[zero; 2 * BLS_N_LIMBS - 1]; 2];
+    z[0][..BLS_N_LIMBS].copy_from_slice(&x[0]);
+    z[1][..BLS_N_LIMBS].copy_from_slice(&x[1]);
     z
 }
 
-pub fn pol_mul_fq2<T>(x: [[T; N_LIMBS]; 2], y: [[T; N_LIMBS]; 2]) -> [[T; 2 * N_LIMBS - 1]; 2]
+pub fn pol_mul_fq2<T>(
+    x: [[T; BLS_N_LIMBS]; 2],
+    y: [[T; BLS_N_LIMBS]; 2],
+) -> [[T; 2 * BLS_N_LIMBS - 1]; 2]
 where
     T: Add<Output = T> + AddAssign + Sub<Output = T> + SubAssign + Mul<Output = T> + Copy + Default,
 {
@@ -59,9 +62,9 @@ where
 
 pub fn pol_mul_fq2_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    x: [[ExtensionTarget<D>; N_LIMBS]; 2],
-    y: [[ExtensionTarget<D>; N_LIMBS]; 2],
-) -> [[ExtensionTarget<D>; 2 * N_LIMBS - 1]; 2] {
+    x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+    y: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+) -> [[ExtensionTarget<D>; 2 * BLS_N_LIMBS - 1]; 2] {
     let x_c0 = x[0];
     let x_c1 = x[1];
     let y_c0 = y[0];
@@ -160,15 +163,15 @@ pub fn pol_mul_scalar_fq2_circuit<F: RichField + Extendable<D>, const D: usize, 
     [z_c0, z_c1]
 }
 
-/// 2*N_LIMBS
-pub fn write_fq2<F: Copy>(lv: &mut [F], input: [[F; N_LIMBS]; 2], cur_col: &mut usize) {
+/// 2*BLS_N_LIMBS
+pub fn write_fq2<F: Copy>(lv: &mut [F], input: [[F; BLS_N_LIMBS]; 2], cur_col: &mut usize) {
     input
         .iter()
         .for_each(|coeff| write_u256(lv, coeff, cur_col));
 }
 
-/// 2*N_LIMBS
-pub fn read_fq2<F: Copy + Debug>(lv: &[F], cur_col: &mut usize) -> [[F; N_LIMBS]; 2] {
+/// 2*BLS_N_LIMBS
+pub fn read_fq2<F: Copy + Debug>(lv: &[F], cur_col: &mut usize) -> [[F; BLS_N_LIMBS]; 2] {
     (0..2)
         .map(|_| read_u256(lv, cur_col))
         .collect_vec()

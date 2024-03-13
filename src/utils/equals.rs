@@ -7,7 +7,7 @@ use plonky2::{
 
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
-use crate::constants::N_LIMBS;
+use crate::constants::BLS_N_LIMBS;
 
 pub fn eval_bool<P: PackedField>(yield_constr: &mut ConstraintConsumer<P>, val: P) {
     yield_constr.constraint(val * val - val);
@@ -52,8 +52,8 @@ pub fn vec_equal_circuit<F: RichField + Extendable<D>, const D: usize>(
 pub fn fq_equal_transition<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
     filter: P,
-    x: &[P; N_LIMBS],
-    y: &[P; N_LIMBS],
+    x: &[P; BLS_N_LIMBS],
+    y: &[P; BLS_N_LIMBS],
 ) {
     x.iter()
         .zip(y.iter())
@@ -64,8 +64,8 @@ pub fn fq_equal_transition_circuit<F: RichField + Extendable<D>, const D: usize>
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     filter: ExtensionTarget<D>,
-    x: &[ExtensionTarget<D>; N_LIMBS],
-    y: &[ExtensionTarget<D>; N_LIMBS],
+    x: &[ExtensionTarget<D>; BLS_N_LIMBS],
+    y: &[ExtensionTarget<D>; BLS_N_LIMBS],
 ) {
     x.iter().zip(y.iter()).for_each(|(&x_i, &y_i)| {
         let diff = builder.sub_extension(x_i, y_i);
@@ -76,8 +76,8 @@ pub fn fq_equal_transition_circuit<F: RichField + Extendable<D>, const D: usize>
 
 pub fn fq_equal_first<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
-    x: [P; N_LIMBS],
-    y: [P; N_LIMBS],
+    x: [P; BLS_N_LIMBS],
+    y: [P; BLS_N_LIMBS],
 ) {
     x.iter()
         .zip(y.iter())
@@ -87,8 +87,8 @@ pub fn fq_equal_first<P: PackedField>(
 pub fn fq_equal_first_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-    x: [ExtensionTarget<D>; N_LIMBS],
-    y: [ExtensionTarget<D>; N_LIMBS],
+    x: [ExtensionTarget<D>; BLS_N_LIMBS],
+    y: [ExtensionTarget<D>; BLS_N_LIMBS],
 ) {
     x.iter().zip(y.iter()).for_each(|(&x_i, &y_i)| {
         let diff = builder.sub_extension(x_i, y_i);
@@ -98,8 +98,8 @@ pub fn fq_equal_first_circuit<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn fq_equal_last<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
-    x: [P; N_LIMBS],
-    y: [P; N_LIMBS],
+    x: [P; BLS_N_LIMBS],
+    y: [P; BLS_N_LIMBS],
 ) {
     x.iter()
         .zip(y.iter())
@@ -109,8 +109,8 @@ pub fn fq_equal_last<P: PackedField>(
 pub fn fq_equal_last_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-    x: [ExtensionTarget<D>; N_LIMBS],
-    y: [ExtensionTarget<D>; N_LIMBS],
+    x: [ExtensionTarget<D>; BLS_N_LIMBS],
+    y: [ExtensionTarget<D>; BLS_N_LIMBS],
 ) {
     x.iter().zip(y.iter()).for_each(|(&x_i, &y_i)| {
         let diff = builder.sub_extension(x_i, y_i);
@@ -121,8 +121,8 @@ pub fn fq_equal_last_circuit<F: RichField + Extendable<D>, const D: usize>(
 pub fn fq2_equal_transition<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
     filter: P,
-    x: [[P; N_LIMBS]; 2],
-    y: [[P; N_LIMBS]; 2],
+    x: [[P; BLS_N_LIMBS]; 2],
+    y: [[P; BLS_N_LIMBS]; 2],
 ) {
     x.iter()
         .zip(y.iter())
@@ -133,8 +133,8 @@ pub fn fq2_equal_transition_circuit<F: RichField + Extendable<D>, const D: usize
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     filter: ExtensionTarget<D>,
-    x: [[ExtensionTarget<D>; N_LIMBS]; 2],
-    y: [[ExtensionTarget<D>; N_LIMBS]; 2],
+    x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+    y: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
 ) {
     x.iter().zip(y.iter()).for_each(|(&x_i, &y_i)| {
         fq_equal_transition_circuit(builder, yield_constr, filter, &x_i, &y_i)
@@ -143,8 +143,8 @@ pub fn fq2_equal_transition_circuit<F: RichField + Extendable<D>, const D: usize
 
 pub fn fq2_equal_first<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
-    x: [[P; N_LIMBS]; 2],
-    y: [[P; N_LIMBS]; 2],
+    x: [[P; BLS_N_LIMBS]; 2],
+    y: [[P; BLS_N_LIMBS]; 2],
 ) {
     x.iter()
         .zip(y.iter())
@@ -154,8 +154,8 @@ pub fn fq2_equal_first<P: PackedField>(
 pub fn fq2_equal_first_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-    x: [[ExtensionTarget<D>; N_LIMBS]; 2],
-    y: [[ExtensionTarget<D>; N_LIMBS]; 2],
+    x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+    y: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
 ) {
     x.iter()
         .zip(y.iter())
@@ -164,8 +164,8 @@ pub fn fq2_equal_first_circuit<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn fq2_equal_last<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
-    x: [[P; N_LIMBS]; 2],
-    y: [[P; N_LIMBS]; 2],
+    x: [[P; BLS_N_LIMBS]; 2],
+    y: [[P; BLS_N_LIMBS]; 2],
 ) {
     x.iter()
         .zip(y.iter())
@@ -175,8 +175,8 @@ pub fn fq2_equal_last<P: PackedField>(
 pub fn fq2_equal_last_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-    x: [[ExtensionTarget<D>; N_LIMBS]; 2],
-    y: [[ExtensionTarget<D>; N_LIMBS]; 2],
+    x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+    y: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
 ) {
     x.iter()
         .zip(y.iter())
@@ -185,8 +185,8 @@ pub fn fq2_equal_last_circuit<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn fq12_equal_first<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
-    x: &Vec<[P; N_LIMBS]>,
-    y: &Vec<[P; N_LIMBS]>,
+    x: &Vec<[P; BLS_N_LIMBS]>,
+    y: &Vec<[P; BLS_N_LIMBS]>,
 ) {
     assert!(x.len() == 12);
     assert!(y.len() == 12);
@@ -198,8 +198,8 @@ pub fn fq12_equal_first<P: PackedField>(
 pub fn fq12_equal_first_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-    x: &Vec<[ExtensionTarget<D>; N_LIMBS]>,
-    y: &Vec<[ExtensionTarget<D>; N_LIMBS]>,
+    x: &Vec<[ExtensionTarget<D>; BLS_N_LIMBS]>,
+    y: &Vec<[ExtensionTarget<D>; BLS_N_LIMBS]>,
 ) {
     x.iter()
         .zip(y.iter())
@@ -208,8 +208,8 @@ pub fn fq12_equal_first_circuit<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn fq12_equal_last<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
-    x: &Vec<[P; N_LIMBS]>,
-    y: &Vec<[P; N_LIMBS]>,
+    x: &Vec<[P; BLS_N_LIMBS]>,
+    y: &Vec<[P; BLS_N_LIMBS]>,
 ) {
     assert!(x.len() == 12);
     assert!(y.len() == 12);
@@ -221,8 +221,8 @@ pub fn fq12_equal_last<P: PackedField>(
 pub fn fq12_equal_last_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-    x: &Vec<[ExtensionTarget<D>; N_LIMBS]>,
-    y: &Vec<[ExtensionTarget<D>; N_LIMBS]>,
+    x: &Vec<[ExtensionTarget<D>; BLS_N_LIMBS]>,
+    y: &Vec<[ExtensionTarget<D>; BLS_N_LIMBS]>,
 ) {
     x.iter()
         .zip(y.iter())
@@ -232,8 +232,8 @@ pub fn fq12_equal_last_circuit<F: RichField + Extendable<D>, const D: usize>(
 pub fn fq12_equal_transition<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
     filter: P,
-    x: [[P; N_LIMBS]; 12],
-    y: [[P; N_LIMBS]; 12],
+    x: [[P; BLS_N_LIMBS]; 12],
+    y: [[P; BLS_N_LIMBS]; 12],
 ) {
     (0..12).for_each(|i| {
         let x_i = x[i];
@@ -248,8 +248,8 @@ pub fn fq12_equal_transition_circuit<F: RichField + Extendable<D>, const D: usiz
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     filter: ExtensionTarget<D>,
-    x: [[ExtensionTarget<D>; N_LIMBS]; 12],
-    y: [[ExtensionTarget<D>; N_LIMBS]; 12],
+    x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 12],
+    y: [[ExtensionTarget<D>; BLS_N_LIMBS]; 12],
 ) {
     (0..12).for_each(|i| {
         let x_i = x[i];

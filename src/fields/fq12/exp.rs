@@ -1,18 +1,18 @@
 //    a       |      b       |   output   |  flags   | rotate_witness |  io_pulses   |     lookups         |
-// 12*N_LIMBS |  12*N_LIMBS  | 84*N_LIMBS |   14     |       2        |  1+4*c.num_io  | 1+6*NUM_RANGE_CHECK |
-//<------------------------------------------------->main_cols: 108*N_LIMBS + 14
-//                           <--------->range_check(start: 24*N_LIMBS, end: 108*N_LIMBS-12))
+// 12*BLS_N_LIMBS |  12*BLS_N_LIMBS  | 84*BLS_N_LIMBS |   14     |       2        |  1+4*c.num_io  | 1+6*NUM_RANGE_CHECK |
+//<------------------------------------------------->main_cols: 108*BLS_N_LIMBS + 14
+//                           <--------->range_check(start: 24*BLS_N_LIMBS, end: 108*BLS_N_LIMBS-12))
 
 fn constants(num_io: usize) -> ExpStarkConstants {
-    let start_flags_col = 108 * N_LIMBS;
+    let start_flags_col = 108 * BLS_N_LIMBS;
     let num_main_cols = start_flags_col + NUM_FLAGS_COLS;
 
     let start_periodic_pulse_col = num_main_cols;
     let start_io_pulses_col = start_periodic_pulse_col + 2;
     let start_lookups_col = start_io_pulses_col + 1 + 4 * num_io;
 
-    let start_range_check_col = 24 * N_LIMBS;
-    let num_range_check_cols = 84 * N_LIMBS - 12;
+    let start_range_check_col = 24 * BLS_N_LIMBS;
+    let num_range_check_cols = 84 * BLS_N_LIMBS - 12;
     let end_range_check_col = start_range_check_col + num_range_check_cols;
 
     let num_columns = start_lookups_col + 1 + 6 * num_range_check_cols;
@@ -63,7 +63,7 @@ use starky::{
 };
 
 use crate::{
-    constants::{ExpStarkConstants, N_LIMBS},
+    constants::{ExpStarkConstants, BLS_N_LIMBS},
     utils::{
         equals::{
             fq12_equal_transition, fq12_equal_transition_circuit, vec_equal, vec_equal_circuit,
@@ -94,14 +94,14 @@ pub struct Fq12ExpIONative {
     pub output: Fq12,
 }
 
-pub(crate) const FQ12_EXP_IO_LEN: usize = 36 * N_LIMBS + NUM_INPUT_LIMBS;
+pub(crate) const FQ12_EXP_IO_LEN: usize = 36 * BLS_N_LIMBS + NUM_INPUT_LIMBS;
 
-// 36*N_LIMBS + NUM_INPUT_LIMBS
+// 36*BLS_N_LIMBS + NUM_INPUT_LIMBS
 pub struct Fq12ExpIO<F> {
-    pub x: [[F; N_LIMBS]; 12],
-    pub offset: [[F; N_LIMBS]; 12],
+    pub x: [[F; BLS_N_LIMBS]; 12],
+    pub offset: [[F; BLS_N_LIMBS]; 12],
     pub exp_val: [F; NUM_INPUT_LIMBS],
-    pub output: [[F; N_LIMBS]; 12],
+    pub output: [[F; BLS_N_LIMBS]; 12],
 }
 
 pub fn fq12_exp_io_to_columns<F: RichField>(input: &Fq12ExpIONative) -> [F; FQ12_EXP_IO_LEN] {
@@ -269,7 +269,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Fq12ExpStark<F, D> {
         }
         let output = {
             let last_row = rows.last().unwrap();
-            let mut cur_col = 12 * N_LIMBS;
+            let mut cur_col = 12 * BLS_N_LIMBS;
             let b = read_fq12(last_row, &mut cur_col);
             columns_to_fq12(b)
         };

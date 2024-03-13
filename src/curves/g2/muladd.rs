@@ -9,10 +9,11 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::constants::N_LIMBS;
+use crate::constants::BLS_N_LIMBS;
 use crate::modular::modular::{
-    bn254_base_modulus_bigint, bn254_base_modulus_packfield, eval_modular_op,
-    eval_modular_op_circuit, generate_modular_op, read_modulus_aux, write_modulus_aux, ModulusAux,
+    bls12381_base_modulus_packfield, bn254_base_modulus_bigint, bn254_base_modulus_packfield,
+    eval_modular_op, eval_modular_op_circuit, generate_modular_op, read_modulus_aux,
+    write_modulus_aux, ModulusAux,
 };
 use crate::modular::modular_zero::{read_modulus_aux_zero, write_modulus_aux_zero, ModulusAuxZero};
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
@@ -30,9 +31,9 @@ use crate::utils::utils::{
 };
 
 pub struct G2Output<F> {
-    pub lambda: [[F; N_LIMBS]; 2],
-    pub new_x: [[F; N_LIMBS]; 2],
-    pub new_y: [[F; N_LIMBS]; 2],
+    pub lambda: [[F; BLS_N_LIMBS]; 2],
+    pub new_x: [[F; BLS_N_LIMBS]; 2],
+    pub new_y: [[F; BLS_N_LIMBS]; 2],
     pub aux_zeros: [ModulusAuxZero<F>; 2],
     pub auxs: [ModulusAux<F>; 4],
     pub quot_sign_zeros: [F; 2],
@@ -42,9 +43,9 @@ pub struct G2Output<F> {
 impl<F: RichField + Default> Default for G2Output<F> {
     fn default() -> Self {
         Self {
-            lambda: [[F::ZERO; N_LIMBS]; 2],
-            new_x: [[F::ZERO; N_LIMBS]; 2],
-            new_y: [[F::ZERO; N_LIMBS]; 2],
+            lambda: [[F::ZERO; BLS_N_LIMBS]; 2],
+            new_x: [[F::ZERO; BLS_N_LIMBS]; 2],
+            new_y: [[F::ZERO; BLS_N_LIMBS]; 2],
             aux_zeros: [ModulusAuxZero::default(); 2],
             auxs: [ModulusAux::default(); 4],
             quot_sign_zeros: [F::ONE; 2],
@@ -56,11 +57,11 @@ impl<F: RichField + Default> Default for G2Output<F> {
 pub fn write_g2_output<F: Copy>(lv: &mut [F], output: &G2Output<F>, cur_col: &mut usize) {
     let orinigal_col = *cur_col;
     write_fq2(lv, output.lambda, cur_col);
-    write_fq2(lv, output.new_x, cur_col); // 2*N_LIMBS * 3
+    write_fq2(lv, output.new_x, cur_col); // 2*BLS_N_LIMBS * 3
     write_fq2(lv, output.new_y, cur_col);
-    write_modulus_aux_zero(lv, &output.aux_zeros[0], cur_col); // (5*N_LIMBS-1)*2
+    write_modulus_aux_zero(lv, &output.aux_zeros[0], cur_col); // (5*BLS_N_LIMBS-1)*2
     write_modulus_aux_zero(lv, &output.aux_zeros[1], cur_col);
-    write_modulus_aux(lv, &output.auxs[0], cur_col); // (6*N_LIMBS-1)*4
+    write_modulus_aux(lv, &output.auxs[0], cur_col); // (6*BLS_N_LIMBS-1)*4
     write_modulus_aux(lv, &output.auxs[1], cur_col);
     write_modulus_aux(lv, &output.auxs[2], cur_col);
     write_modulus_aux(lv, &output.auxs[3], cur_col);
@@ -76,7 +77,7 @@ pub fn write_g2_output<F: Copy>(lv: &mut [F], output: &G2Output<F>, cur_col: &mu
     *cur_col += 1;
     lv[*cur_col] = output.quot_signs[3];
     *cur_col += 1;
-    assert!(*cur_col == orinigal_col + 40 * N_LIMBS);
+    assert!(*cur_col == orinigal_col + 40 * BLS_N_LIMBS);
 }
 
 pub fn read_g2_output<F: Copy + Debug>(lv: &[F], cur_col: &mut usize) -> G2Output<F> {
@@ -102,7 +103,7 @@ pub fn read_g2_output<F: Copy + Debug>(lv: &[F], cur_col: &mut usize) -> G2Outpu
     *cur_col += 1;
     let quot_signs_3 = lv[*cur_col];
     *cur_col += 1;
-    assert!(*cur_col == orinigal_col + 40 * N_LIMBS);
+    assert!(*cur_col == orinigal_col + 40 * BLS_N_LIMBS);
 
     G2Output {
         lambda,
@@ -115,7 +116,10 @@ pub fn read_g2_output<F: Copy + Debug>(lv: &[F], cur_col: &mut usize) -> G2Outpu
     }
 }
 
-pub fn generate_g2_double<F: RichField>(x: [[F; N_LIMBS]; 2], y: [[F; N_LIMBS]; 2]) -> G2Output<F> {
+pub fn generate_g2_double<F: RichField>(
+    x: [[F; BLS_N_LIMBS]; 2],
+    y: [[F; BLS_N_LIMBS]; 2],
+) -> G2Output<F> {
     let modulus = bn254_base_modulus_bigint();
     // restore
     let x_fq = columns_to_fq2(x);
@@ -126,7 +130,7 @@ pub fn generate_g2_double<F: RichField>(x: [[F; N_LIMBS]; 2], y: [[F; N_LIMBS]; 
     let x_i64 = x.map(positive_column_to_i64);
     let y_i64 = y.map(positive_column_to_i64);
 
-    let lambda_i64: [[_; N_LIMBS]; 2] = fq2_to_columns(lambda_fq);
+    let lambda_i64: [[_; BLS_N_LIMBS]; 2] = fq2_to_columns(lambda_fq);
     let lambda = lambda_i64.map(i64_to_column_positive);
 
     let lambda_y = pol_mul_fq2(lambda_i64, y_i64);
@@ -159,7 +163,7 @@ pub fn generate_g2_double<F: RichField>(x: [[F; N_LIMBS]; 2], y: [[F; N_LIMBS]; 
         quot_signs.push(quot_sign_x);
         new_x_coeffs.push(new_x);
     }
-    let new_x_i64: [[_; N_LIMBS]; 2] = new_x_coeffs
+    let new_x_i64: [[_; BLS_N_LIMBS]; 2] = new_x_coeffs
         .iter()
         .cloned()
         .map(positive_column_to_i64)
@@ -186,8 +190,8 @@ pub fn generate_g2_double<F: RichField>(x: [[F; N_LIMBS]; 2], y: [[F; N_LIMBS]; 
     let auxs: [ModulusAux<F>; 4] = auxs.try_into().unwrap();
     let quot_signs: [F; 4] = quot_signs.try_into().unwrap();
 
-    let new_x: [[_; N_LIMBS]; 2] = new_x_coeffs.try_into().unwrap();
-    let new_y: [[_; N_LIMBS]; 2] = new_y_coeffs.try_into().unwrap();
+    let new_x: [[_; BLS_N_LIMBS]; 2] = new_x_coeffs.try_into().unwrap();
+    let new_y: [[_; BLS_N_LIMBS]; 2] = new_y_coeffs.try_into().unwrap();
 
     G2Output {
         lambda,
@@ -203,8 +207,8 @@ pub fn generate_g2_double<F: RichField>(x: [[F; N_LIMBS]; 2], y: [[F; N_LIMBS]; 
 pub fn eval_g2_double<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
     filter: P,
-    x: [[P; N_LIMBS]; 2],
-    y: [[P; N_LIMBS]; 2],
+    x: [[P; BLS_N_LIMBS]; 2],
+    y: [[P; BLS_N_LIMBS]; 2],
     output: &G2Output<P>,
 ) {
     let modulus = bn254_base_modulus_packfield();
@@ -264,11 +268,11 @@ pub fn eval_g2_double_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     filter: ExtensionTarget<D>,
-    x: [[ExtensionTarget<D>; N_LIMBS]; 2],
-    y: [[ExtensionTarget<D>; N_LIMBS]; 2],
+    x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+    y: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
     output: &G2Output<ExtensionTarget<D>>,
 ) {
-    let modulus = bn254_base_modulus_packfield();
+    let modulus = bls12381_base_modulus_packfield();
     let modulus = modulus.map(|x| builder.constant_extension(x));
 
     let lambda_y = pol_mul_fq2_circuit(builder, output.lambda, y);
@@ -328,10 +332,10 @@ pub fn eval_g2_double_circuit<F: RichField + Extendable<D>, const D: usize>(
 }
 
 pub fn generate_g2_add<F: RichField>(
-    a_x: [[F; N_LIMBS]; 2],
-    a_y: [[F; N_LIMBS]; 2],
-    b_x: [[F; N_LIMBS]; 2],
-    b_y: [[F; N_LIMBS]; 2],
+    a_x: [[F; BLS_N_LIMBS]; 2],
+    a_y: [[F; BLS_N_LIMBS]; 2],
+    b_x: [[F; BLS_N_LIMBS]; 2],
+    b_y: [[F; BLS_N_LIMBS]; 2],
 ) -> G2Output<F> {
     let modulus = bn254_base_modulus_bigint();
     // restore
@@ -346,7 +350,7 @@ pub fn generate_g2_add<F: RichField>(
     let b_x_i64 = b_x.map(positive_column_to_i64);
     let b_y_i64 = b_y.map(positive_column_to_i64);
     let lambda_i64 = fq2_to_columns(lambda_fq2);
-    let lambda: [[F; N_LIMBS]; 2] = lambda_i64.map(i64_to_column_positive);
+    let lambda: [[F; BLS_N_LIMBS]; 2] = lambda_i64.map(i64_to_column_positive);
 
     let delta_x = pol_sub_fq2(b_x_i64, a_x_i64);
     let delta_y = pol_sub_fq2(b_y_i64, a_y_i64);
@@ -378,7 +382,7 @@ pub fn generate_g2_add<F: RichField>(
         quot_signs.push(quot_sign_x);
         new_x_coeffs.push(new_x);
     }
-    let new_x: [[F; N_LIMBS]; 2] = new_x_coeffs.try_into().unwrap();
+    let new_x: [[F; BLS_N_LIMBS]; 2] = new_x_coeffs.try_into().unwrap();
 
     let new_x_i64 = new_x.map(positive_column_to_i64);
 
@@ -395,7 +399,7 @@ pub fn generate_g2_add<F: RichField>(
         quot_signs.push(quot_sign_y);
         new_y_coeffs.push(new_y);
     }
-    let new_y: [[F; N_LIMBS]; 2] = new_y_coeffs.try_into().unwrap();
+    let new_y: [[F; BLS_N_LIMBS]; 2] = new_y_coeffs.try_into().unwrap();
 
     let aux_zeros: [ModulusAuxZero<F>; 2] = aux_zeros.try_into().unwrap();
     let quot_sign_zeros: [F; 2] = quot_sign_zeros.try_into().unwrap();
@@ -416,10 +420,10 @@ pub fn generate_g2_add<F: RichField>(
 pub fn eval_g2_add<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
     filter: P,
-    a_x: [[P; N_LIMBS]; 2],
-    a_y: [[P; N_LIMBS]; 2],
-    b_x: [[P; N_LIMBS]; 2],
-    b_y: [[P; N_LIMBS]; 2],
+    a_x: [[P; BLS_N_LIMBS]; 2],
+    a_y: [[P; BLS_N_LIMBS]; 2],
+    b_x: [[P; BLS_N_LIMBS]; 2],
+    b_y: [[P; BLS_N_LIMBS]; 2],
     output: &G2Output<P>,
 ) {
     let modulus = bn254_base_modulus_packfield();
@@ -475,13 +479,13 @@ pub fn eval_g2_add_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     filter: ExtensionTarget<D>,
-    a_x: [[ExtensionTarget<D>; N_LIMBS]; 2],
-    a_y: [[ExtensionTarget<D>; N_LIMBS]; 2],
-    b_x: [[ExtensionTarget<D>; N_LIMBS]; 2],
-    b_y: [[ExtensionTarget<D>; N_LIMBS]; 2],
+    a_x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+    a_y: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+    b_x: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
+    b_y: [[ExtensionTarget<D>; BLS_N_LIMBS]; 2],
     output: &G2Output<ExtensionTarget<D>>,
 ) {
-    let modulus = bn254_base_modulus_packfield();
+    let modulus = bls12381_base_modulus_packfield();
     let modulus = modulus.map(|x| builder.constant_extension(x));
 
     let delta_x = pol_sub_fq2_circuit(builder, b_x, a_x);

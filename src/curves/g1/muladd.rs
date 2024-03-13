@@ -16,8 +16,8 @@ use plonky2::{
     util::transpose,
 };
 
-use crate::constants::N_LIMBS;
-use crate::modular::modular::write_modulus_aux;
+use crate::constants::BLS_N_LIMBS;
+use crate::modular::modular::{bls12381_base_modulus_packfield, write_modulus_aux};
 use crate::modular::modular_zero::{
     eval_modular_zero, eval_modular_zero_circuit, generate_modular_zero, read_modulus_aux_zero,
     write_modulus_aux_zero, ModulusAuxZero,
@@ -47,9 +47,9 @@ use crate::modular::pol_utils::{
 use crate::utils::range_check::{generate_split_u16_range_check, split_u16_range_check_pairs};
 
 pub struct G1Output<F> {
-    pub lambda: [F; N_LIMBS],
-    pub new_x: [F; N_LIMBS],
-    pub new_y: [F; N_LIMBS],
+    pub lambda: [F; BLS_N_LIMBS],
+    pub new_x: [F; BLS_N_LIMBS],
+    pub new_y: [F; BLS_N_LIMBS],
     pub aux_zero: ModulusAuxZero<F>,
     pub aux_x: ModulusAux<F>,
     pub aux_y: ModulusAux<F>,
@@ -61,9 +61,9 @@ pub struct G1Output<F> {
 impl<F: RichField + Default> Default for G1Output<F> {
     fn default() -> Self {
         Self {
-            lambda: [F::ZERO; N_LIMBS],
-            new_x: [F::ZERO; N_LIMBS],
-            new_y: [F::ZERO; N_LIMBS],
+            lambda: [F::ZERO; BLS_N_LIMBS],
+            new_x: [F::ZERO; BLS_N_LIMBS],
+            new_y: [F::ZERO; BLS_N_LIMBS],
             aux_zero: ModulusAuxZero::default(),
             aux_x: ModulusAux::default(),
             aux_y: ModulusAux::default(),
@@ -74,14 +74,14 @@ impl<F: RichField + Default> Default for G1Output<F> {
     }
 }
 
-/// total: 20*N_LIMBS
-/// range_check: 20*N_LIMBS - 3
+/// total: 20*BLS_N_LIMBS
+/// range_check: 20*BLS_N_LIMBS - 3
 pub fn write_g1_output<F: Copy>(lv: &mut [F], output: &G1Output<F>, cur_col: &mut usize) {
-    write_u256(lv, &output.lambda, cur_col); // N_LIMBS
-    write_u256(lv, &output.new_x, cur_col); // N_LIMBS
-    write_u256(lv, &output.new_y, cur_col); // N_LIMBS
-    write_modulus_aux_zero(lv, &output.aux_zero, cur_col); // 5*N_LIMBS - 1
-                                                           // 12*N_LIMBS - 2
+    write_u256(lv, &output.lambda, cur_col); // BLS_N_LIMBS
+    write_u256(lv, &output.new_x, cur_col); // BLS_N_LIMBS
+    write_u256(lv, &output.new_y, cur_col); // BLS_N_LIMBS
+    write_modulus_aux_zero(lv, &output.aux_zero, cur_col); // 5*BLS_N_LIMBS - 1
+                                                           // 12*BLS_N_LIMBS - 2
     write_modulus_aux(lv, &output.aux_x, cur_col);
     write_modulus_aux(lv, &output.aux_y, cur_col);
     // 3
@@ -93,8 +93,8 @@ pub fn write_g1_output<F: Copy>(lv: &mut [F], output: &G1Output<F>, cur_col: &mu
     *cur_col += 1;
 }
 
-/// total: 20*N_LIMBS
-/// range_check: 20*N_LIMBS - 3
+/// total: 20*BLS_N_LIMBS
+/// range_check: 20*BLS_N_LIMBS - 3
 pub fn read_g1_output<F: Copy + core::fmt::Debug>(lv: &[F], cur_col: &mut usize) -> G1Output<F> {
     let lambda = read_u256(lv, cur_col);
     let new_x = read_u256(lv, cur_col);
@@ -122,10 +122,10 @@ pub fn read_g1_output<F: Copy + core::fmt::Debug>(lv: &[F], cur_col: &mut usize)
 }
 
 pub fn generate_g1_add<F: RichField>(
-    a_x: [F; N_LIMBS],
-    a_y: [F; N_LIMBS],
-    b_x: [F; N_LIMBS],
-    b_y: [F; N_LIMBS],
+    a_x: [F; BLS_N_LIMBS],
+    a_y: [F; BLS_N_LIMBS],
+    b_x: [F; BLS_N_LIMBS],
+    b_y: [F; BLS_N_LIMBS],
 ) -> G1Output<F> {
     let modulus = bn254_base_modulus_bigint();
     // restore
@@ -139,7 +139,7 @@ pub fn generate_g1_add<F: RichField>(
     let a_y_i64 = positive_column_to_i64(a_y);
     let b_x_i64 = positive_column_to_i64(b_x);
     let b_y_i64 = positive_column_to_i64(b_y);
-    let lambda_i64: [_; N_LIMBS] = fq_to_columns(lambda_fq);
+    let lambda_i64: [_; BLS_N_LIMBS] = fq_to_columns(lambda_fq);
     let lambda = i64_to_column_positive(lambda_i64);
 
     let delta_x = pol_sub_normal(b_x_i64, a_x_i64);
@@ -158,8 +158,8 @@ pub fn generate_g1_add<F: RichField>(
     let x1_minus_new_x = pol_sub_normal(a_x_i64, new_x_i64);
     let lambda_mul_x1_minus_new_x = pol_mul_wide(lambda_i64, x1_minus_new_x);
 
-    let mut y1_wide = [0i64; 2 * N_LIMBS - 1];
-    y1_wide[0..N_LIMBS].copy_from_slice(&a_y_i64);
+    let mut y1_wide = [0i64; 2 * BLS_N_LIMBS - 1];
+    y1_wide[0..BLS_N_LIMBS].copy_from_slice(&a_y_i64);
     let new_y_input = pol_sub_normal(lambda_mul_x1_minus_new_x, y1_wide);
     let (new_y, quot_sign_y, aux_y) = generate_modular_op::<F>(&modulus, new_y_input);
 
@@ -179,10 +179,10 @@ pub fn generate_g1_add<F: RichField>(
 pub fn eval_g1_add<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
     filter: P,
-    a_x: [P; N_LIMBS],
-    a_y: [P; N_LIMBS],
-    b_x: [P; N_LIMBS],
-    b_y: [P; N_LIMBS],
+    a_x: [P; BLS_N_LIMBS],
+    a_y: [P; BLS_N_LIMBS],
+    b_x: [P; BLS_N_LIMBS],
+    b_y: [P; BLS_N_LIMBS],
     add_o: &G1Output<P>,
 ) {
     let modulus = bn254_base_modulus_packfield();
@@ -215,8 +215,8 @@ pub fn eval_g1_add<P: PackedField>(
     let x1_minus_new_x = pol_sub_normal(a_x, add_o.new_x);
     let lambda_mul_x1_minus_new_x = pol_mul_wide(add_o.lambda, x1_minus_new_x);
 
-    let mut y1_wide = [P::ZEROS; 2 * N_LIMBS - 1];
-    y1_wide[0..N_LIMBS].copy_from_slice(&a_y);
+    let mut y1_wide = [P::ZEROS; 2 * BLS_N_LIMBS - 1];
+    y1_wide[0..BLS_N_LIMBS].copy_from_slice(&a_y);
     let new_y_input = pol_sub_normal(lambda_mul_x1_minus_new_x, y1_wide);
     eval_modular_op(
         yield_constr,
@@ -233,13 +233,13 @@ pub fn eval_g1_add_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     filter: ExtensionTarget<D>,
-    a_x: [ExtensionTarget<D>; N_LIMBS],
-    a_y: [ExtensionTarget<D>; N_LIMBS],
-    b_x: [ExtensionTarget<D>; N_LIMBS],
-    b_y: [ExtensionTarget<D>; N_LIMBS],
+    a_x: [ExtensionTarget<D>; BLS_N_LIMBS],
+    a_y: [ExtensionTarget<D>; BLS_N_LIMBS],
+    b_x: [ExtensionTarget<D>; BLS_N_LIMBS],
+    b_y: [ExtensionTarget<D>; BLS_N_LIMBS],
     add_o: &G1Output<ExtensionTarget<D>>,
 ) {
-    let modulus = bn254_base_modulus_packfield();
+    let modulus = bls12381_base_modulus_packfield();
     let modulus = modulus.map(|x| builder.constant_extension(x));
 
     let delta_x = pol_sub_normal_ext_circuit(builder, b_x, a_x);
@@ -273,8 +273,8 @@ pub fn eval_g1_add_circuit<F: RichField + Extendable<D>, const D: usize>(
     let x1_minus_new_x = pol_sub_normal_ext_circuit(builder, a_x, add_o.new_x);
     let lambda_mul_x1_minus_new_x = pol_mul_wide_ext_circuit(builder, add_o.lambda, x1_minus_new_x);
 
-    let mut y1_wide = [builder.zero_extension(); 2 * N_LIMBS - 1];
-    y1_wide[0..N_LIMBS].copy_from_slice(&a_y);
+    let mut y1_wide = [builder.zero_extension(); 2 * BLS_N_LIMBS - 1];
+    y1_wide[0..BLS_N_LIMBS].copy_from_slice(&a_y);
     let new_y_input = pol_sub_normal_ext_circuit(builder, lambda_mul_x1_minus_new_x, y1_wide);
     eval_modular_op_circuit(
         builder,
@@ -291,8 +291,8 @@ pub fn eval_g1_add_circuit<F: RichField + Extendable<D>, const D: usize>(
 pub fn eval_g1_double<P: PackedField>(
     yield_constr: &mut ConstraintConsumer<P>,
     filter: P,
-    x: [P; N_LIMBS],
-    y: [P; N_LIMBS],
+    x: [P; BLS_N_LIMBS],
+    y: [P; BLS_N_LIMBS],
     double_o: &G1Output<P>,
 ) {
     let modulus = bn254_base_modulus_packfield();
@@ -327,8 +327,8 @@ pub fn eval_g1_double<P: PackedField>(
     let x1_minus_new_x = pol_sub_normal(x, double_o.new_x);
     let lambda_mul_x1_minus_new_x = pol_mul_wide(double_o.lambda, x1_minus_new_x);
 
-    let mut y1_wide = [P::ZEROS; 2 * N_LIMBS - 1];
-    y1_wide[0..N_LIMBS].copy_from_slice(&y);
+    let mut y1_wide = [P::ZEROS; 2 * BLS_N_LIMBS - 1];
+    y1_wide[0..BLS_N_LIMBS].copy_from_slice(&y);
     let new_y_input = pol_sub_normal(lambda_mul_x1_minus_new_x, y1_wide);
     eval_modular_op(
         yield_constr,
@@ -345,11 +345,11 @@ pub fn eval_g1_double_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     yield_constr: &mut RecursiveConstraintConsumer<F, D>,
     filter: ExtensionTarget<D>,
-    x: [ExtensionTarget<D>; N_LIMBS],
-    y: [ExtensionTarget<D>; N_LIMBS],
+    x: [ExtensionTarget<D>; BLS_N_LIMBS],
+    y: [ExtensionTarget<D>; BLS_N_LIMBS],
     double_o: &G1Output<ExtensionTarget<D>>,
 ) {
-    let modulus = bn254_base_modulus_packfield();
+    let modulus = bls12381_base_modulus_packfield();
     let modulus = modulus.map(|x| builder.constant_extension(x));
 
     let lambda_y = pol_mul_wide_ext_circuit(builder, double_o.lambda, y);
@@ -391,8 +391,8 @@ pub fn eval_g1_double_circuit<F: RichField + Extendable<D>, const D: usize>(
     let lambda_mul_x1_minus_new_x =
         pol_mul_wide_ext_circuit(builder, double_o.lambda, x1_minus_new_x);
 
-    let mut y1_wide = [builder.zero_extension(); 2 * N_LIMBS - 1];
-    y1_wide[0..N_LIMBS].copy_from_slice(&y);
+    let mut y1_wide = [builder.zero_extension(); 2 * BLS_N_LIMBS - 1];
+    y1_wide[0..BLS_N_LIMBS].copy_from_slice(&y);
     let new_y_input = pol_sub_normal_ext_circuit(builder, lambda_mul_x1_minus_new_x, y1_wide);
     eval_modular_op_circuit(
         builder,
@@ -406,7 +406,7 @@ pub fn eval_g1_double_circuit<F: RichField + Extendable<D>, const D: usize>(
     );
 }
 
-pub fn generate_g1_double<F: RichField>(x: [F; N_LIMBS], y: [F; N_LIMBS]) -> G1Output<F> {
+pub fn generate_g1_double<F: RichField>(x: [F; BLS_N_LIMBS], y: [F; BLS_N_LIMBS]) -> G1Output<F> {
     let modulus = bn254_base_modulus_bigint();
     // restore
     let x_fq = columns_to_fq(&x);
@@ -417,7 +417,7 @@ pub fn generate_g1_double<F: RichField>(x: [F; N_LIMBS], y: [F; N_LIMBS]) -> G1O
     let x_i64 = positive_column_to_i64(x);
     let y_i64 = positive_column_to_i64(y);
 
-    let lambda_i64: [_; N_LIMBS] = fq_to_columns(lambda_fq);
+    let lambda_i64: [_; BLS_N_LIMBS] = fq_to_columns(lambda_fq);
     let lambda = i64_to_column_positive(lambda_i64);
 
     let lambda_y = pol_mul_wide(lambda_i64, y_i64);
@@ -429,8 +429,8 @@ pub fn generate_g1_double<F: RichField>(x: [F; N_LIMBS], y: [F; N_LIMBS]) -> G1O
     let zero_pol = pol_sub_normal(lambda_y_double, x_sq_triple);
     let (quot_sign_zero, aux_zero) = generate_modular_zero::<F>(&modulus, zero_pol);
 
-    let mut x_wide = [0i64; 2 * N_LIMBS - 1];
-    x_wide[0..N_LIMBS].copy_from_slice(&x_i64);
+    let mut x_wide = [0i64; 2 * BLS_N_LIMBS - 1];
+    x_wide[0..BLS_N_LIMBS].copy_from_slice(&x_i64);
 
     let double_x = pol_mul_scalar(x_wide, 2);
     let lambda_sq = pol_mul_wide(lambda_i64, lambda_i64);
@@ -441,8 +441,8 @@ pub fn generate_g1_double<F: RichField>(x: [F; N_LIMBS], y: [F; N_LIMBS]) -> G1O
     let x_minus_new_x = pol_sub_normal(x_i64, new_x_i64);
     let lambda_mul_x1_minus_new_x = pol_mul_wide(lambda_i64, x_minus_new_x);
 
-    let mut y_wide = [0i64; 2 * N_LIMBS - 1];
-    y_wide[0..N_LIMBS].copy_from_slice(&y_i64);
+    let mut y_wide = [0i64; 2 * BLS_N_LIMBS - 1];
+    y_wide[0..BLS_N_LIMBS].copy_from_slice(&y_i64);
     let new_y_input = pol_sub_normal(lambda_mul_x1_minus_new_x, y_wide);
     let (new_y, quot_sign_y, aux_y) = generate_modular_op::<F>(&modulus, new_y_input);
 
@@ -459,11 +459,11 @@ pub fn generate_g1_double<F: RichField>(x: [F; N_LIMBS], y: [F; N_LIMBS]) -> G1O
     }
 }
 
-const MAIN_COLS: usize = 24 * N_LIMBS + 2;
+const MAIN_COLS: usize = 24 * BLS_N_LIMBS + 2;
 const ROWS: usize = 1 << 9;
 
-const START_RANGE_CHECK: usize = 4 * N_LIMBS;
-const NUM_RANGE_CHECKS: usize = 20 * N_LIMBS - 4;
+const START_RANGE_CHECK: usize = 4 * BLS_N_LIMBS;
+const NUM_RANGE_CHECKS: usize = 20 * BLS_N_LIMBS - 4;
 const END_RANGE_CHECK: usize = START_RANGE_CHECK + NUM_RANGE_CHECKS;
 
 #[derive(Clone, Copy)]
@@ -515,11 +515,11 @@ impl<F: RichField + Extendable<D>, const D: usize> G1Stark<F, D> {
 
             let mut lv = [F::ZERO; MAIN_COLS];
             let mut cur_col = 0;
-            write_u256(&mut lv, &a_x, &mut cur_col); // N_LIMBS
-            write_u256(&mut lv, &a_y, &mut cur_col); // N_LIMBS
-            write_u256(&mut lv, &b_x, &mut cur_col); // N_LIMBS
-            write_u256(&mut lv, &b_y, &mut cur_col); // N_LIMBS
-            write_g1_output(&mut lv, &output, &mut cur_col); // 20*N_LIMBS
+            write_u256(&mut lv, &a_x, &mut cur_col); // BLS_N_LIMBS
+            write_u256(&mut lv, &a_y, &mut cur_col); // BLS_N_LIMBS
+            write_u256(&mut lv, &b_x, &mut cur_col); // BLS_N_LIMBS
+            write_u256(&mut lv, &b_y, &mut cur_col); // BLS_N_LIMBS
+            write_g1_output(&mut lv, &output, &mut cur_col); // 20*BLS_N_LIMBS
                                                              // filter, 1
             lv[cur_col] = is_add;
             cur_col += 1;
@@ -527,9 +527,9 @@ impl<F: RichField + Extendable<D>, const D: usize> G1Stark<F, D> {
             lv[cur_col] = is_double;
             cur_col += 1;
 
-            // MAIN_COLS = 7*N_LIMBS + 17*N_LIMBS - 3 + 3 + 1 = 24*N_LIMBS  + 1
-            // START_RANGE_CHECK = 4*N_LIMBS
-            // NUM_RANGE_CHECKS = 20*N_LIMBS - 3
+            // MAIN_COLS = 7*BLS_N_LIMBS + 17*BLS_N_LIMBS - 3 + 3 + 1 = 24*BLS_N_LIMBS  + 1
+            // START_RANGE_CHECK = 4*BLS_N_LIMBS
+            // NUM_RANGE_CHECKS = 20*BLS_N_LIMBS - 3
             assert!(cur_col == MAIN_COLS);
 
             rows.push(lv);

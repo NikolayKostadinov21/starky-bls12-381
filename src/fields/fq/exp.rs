@@ -1,10 +1,10 @@
 //    a    |    b    |    output   |  flags   | rotate_witness |  io_pulses     |     lookups         |
-// N_LIMBS | N_LIMBS |  7*N_LIMBS  |   14     |       2        |  1+4*c.num_io  | 1+2*NUM_RANGE_CHECK |
-//<------------------------------------------>main_cols: 9*N_LIMBS + 14
-//<------------------------------>range_check(start: 0, end: 9*N_LIMBS-1))
+// BLS_N_LIMBS | BLS_N_LIMBS |  7*BLS_N_LIMBS  |   14     |       2        |  1+4*c.num_io  | 1+2*NUM_RANGE_CHECK |
+//<------------------------------------------>main_cols: 9*BLS_N_LIMBS + 14
+//<------------------------------>range_check(start: 0, end: 9*BLS_N_LIMBS-1))
 
 fn constants(num_io: usize) -> ExpStarkConstants {
-    let start_flags_col = 9 * N_LIMBS;
+    let start_flags_col = 9 * BLS_N_LIMBS;
     let num_main_cols = start_flags_col + NUM_FLAGS_COLS;
 
     let start_periodic_pulse_col = num_main_cols;
@@ -12,7 +12,7 @@ fn constants(num_io: usize) -> ExpStarkConstants {
     let start_lookups_col = start_io_pulses_col + 1 + 4 * num_io;
 
     let start_range_check_col = 0;
-    let num_range_check_cols = 9 * N_LIMBS - 1;
+    let num_range_check_cols = 9 * BLS_N_LIMBS - 1;
     let end_range_check_col = start_range_check_col + num_range_check_cols;
 
     let num_columns = start_lookups_col + 1 + 2 * num_range_check_cols;
@@ -56,7 +56,7 @@ use starky::{
 };
 
 use crate::{
-    constants::{ExpStarkConstants, N_LIMBS},
+    constants::{ExpStarkConstants, BLS_N_LIMBS},
     modular::modular::{read_u256, write_u256},
     utils::{
         equals::{fq_equal_transition, fq_equal_transition_circuit, vec_equal, vec_equal_circuit},
@@ -233,7 +233,7 @@ impl<F: RichField + Extendable<D>, const D: usize> FqExpStark<F, D> {
         }
         let output = {
             let last_row = rows.last().unwrap();
-            let mut cur_col = N_LIMBS;
+            let mut cur_col = BLS_N_LIMBS;
             let b = read_u256(last_row, &mut cur_col);
             columns_to_fq(&b)
         };
