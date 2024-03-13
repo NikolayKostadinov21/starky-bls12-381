@@ -285,7 +285,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Fq12ExpU64Stark<F, D> {
         assert!(inputs.len() == c.num_io);
 
         let mut rows = vec![];
-        for input in inputs.clone() {
+        for input in inputs {
             let row = self.generate_trace_for_one_block(input.x, input.offset, input.exp_val);
             rows.extend(row);
         }
@@ -570,6 +570,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for Fq12ExpU64Sta
     }
 }
 
+#[cfg(test)]
 mod tests {
     use std::time::Instant;
 
